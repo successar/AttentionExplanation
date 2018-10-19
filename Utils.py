@@ -117,11 +117,11 @@ def print_attn(sentence, attention, idx=None) :
 def plot_diff(sentence_1, idx, new_word, old_attn, new_attn) :
     # need vec in environment
     L = len(sentence_1)
-    print_attn(sentence_1, old_attn[1:L-1], idx)
+    print_attn(sentence_1[1:L-1], old_attn[1:L-1], idx-1)
     sentence_1 = [x for x in sentence_1]
     sentence_1[idx] = new_word
     print("-"*20)
-    print_attn(sentence_1, new_attn[1:L-1], idx)
+    print_attn(sentence_1[1:L-1], new_attn[1:L-1], idx-1)
 
 #######################################################################################################################
 
@@ -132,7 +132,7 @@ def process_grads(grads) :
             xxe[i] = np.abs(xxe[i])
             xxe[i] = xxe[i] / xxe[i].sum()
 
-def plot_grads(X, attn, grads) :
+def plot_grads(X, attn, grads, dirname='') :
     fig = plt.figure(figsize=(15, 15))
     gs = gridspec.GridSpec(3, 3, figure=fig)
     ax = []
@@ -155,15 +155,18 @@ def plot_grads(X, attn, grads) :
         axes.hexbin(a, x, mincnt=1, gridsize=50, cmap='PiYG', extent=(0, 1, 0, 1))
         axes.set_ylim(0, 1)
         axes.set_xlim(0, 1)
+        axes.set_xlabel("Attention")
+        axes.set_ylabel("Normalised Gradient")
         axes.set_title(k + ' rho=' + str(coef))
         set_square_aspect(axes)
 
     plt.tight_layout()
+    plt.savefig(dirname + '/Gradients.pdf', bbox_inches='tight')
     plt.show()
 
 ##########################################################################################################################
 
-def generate_medians_from_sampling_top(output, attn, yhat) :
+def generate_medians_from_sampling_top(output, attn, yhat, dirname='') :
     perts_attn, words_sampled, best_attn_idxs, perts_output = output
 
     n_top = perts_attn[0].shape[2]
@@ -179,9 +182,17 @@ def generate_medians_from_sampling_top(output, attn, yhat) :
             out_sum.append(perts_output_sum[i][j] - yhat[i])
 
     plt.scatter(attn_meds, meds, s=1)
+    plt.xlabel("Attention")
+    plt.ylabel("Median Attention")
+    plt.title("Attention vs Median Attention at position")
+    plt.savefig(dirname + '/substitute_median.pdf', bbox_inches='tight')
     plt.show()
 
     plt.scatter(attn_meds, out_sum, s=1)
+    plt.xlabel("Attention")
+    plt.ylabel("E_{w~p{w}} [p(y|c, w)]")
+    plt.title("Attention vs output with subsitutions")
+    plt.savefig(dirname + '/substitute_y.pdf', bbox_inches='tight')
     plt.show()
 
 def get_distractors(sampled_output, attn_hat) :
@@ -215,11 +226,11 @@ def get_distractors(sampled_output, attn_hat) :
     return distractors
 
 def print_few_distractors(vec, X, attn_hat, sampled_output, distractors) :
-    perts_attn, words_sampled, best_attn_idxs = sampled_output
+    perts_attn, words_sampled, best_attn_idxs, perts_outputs = sampled_output
 
     for (i, j, idx) in distractors :
         sentence = vec.map2words(X[i])
-        attn = attn_hat[i][:len(sentence)]
+        attn = attn_hat[i]
         pos = j
         w = np.argsort(perts_attn[i][idx, :, j])[len(perts_attn[i][idx, :, j])//2]
 
@@ -230,7 +241,7 @@ def print_few_distractors(vec, X, attn_hat, sampled_output, distractors) :
 
 ###########################################################################################################################
 
-def plot_permutations(permutations, X, yhat, attn) :
+def plot_permutations(permutations, X, yhat, attn, dirname='') :
     perm_med = np.array([np.median(x) for x in permutations])
     max_attn = [max(attn[i][1:len(X[i])-1]) for i in range(len(attn))]
 
@@ -265,6 +276,8 @@ def plot_permutations(permutations, X, yhat, attn) :
 
     plt.subplots_adjust(wspace=0, hspace=0)
     plt.tight_layout()
+
+    plt.savefig(dirname + '/permutation_outputs.pdf', bbox_inches='tight')
     plt.show()
 
 ################################################################################################################################
@@ -287,7 +300,7 @@ def jsd(p, q) :
 
     return jsd_v
 
-def plot_adversarial(X, y_hat, attn, adversarial_outputs) :
+def plot_adversarial(X, y_hat, attn, adversarial_outputs, dirname='') :
     ad_y, ad_attn = adversarial_outputs
     ad_y = np.array(ad_y)[:, 0]
 
@@ -319,7 +332,7 @@ def plot_adversarial(X, y_hat, attn, adversarial_outputs) :
     ax[2].scatter(jds, np.abs(np.array(np.array(y_hat) - np.array(ad_y))), s=1, c=pos_neg_col)
     ax[2].set_xlabel("JS Divergence")
     ax[2].set_ylabel("$\\bigtriangleup y$")
-    ax[2].set_title("JS Divergence vs $\\bigtriangleup y$")
+    ax[2].set_title("JS Divergence vs change in output")
     set_square_aspect(ax[2])
 
     ue, ae = get_entropy(X, attn)
@@ -339,8 +352,11 @@ def plot_adversarial(X, y_hat, attn, adversarial_outputs) :
     ax[4].set_title("Change in Entropies")
     set_square_aspect(ax[4])
 
+
     plt.subplots_adjust(wspace=0, hspace=0)
     plt.tight_layout()
+
+    plt.savefig(dirname + '/adversarial_graphs.pdf', bbox_inches='tight')
     plt.show()
 
     return jds
@@ -356,7 +372,7 @@ def print_adversarial_example(sentence, attn, attn_new) :
 def jsd_bern(p, q) :
     return jsd(np.array([1-p, p]), np.array([1-q, q]))
 
-def plot_y_diff(X, attn, yhat, ynew_list, usehexbin=False) :
+def plot_y_diff(X, attn, yhat, ynew_list, title=None, xlabel=None, ylabel=None, save_name=None, dirname='', usehexbin=False) :
     y_diff = [ynew_list[i] - yhat[i] for i in range(len(yhat))]
     
     a = []
@@ -373,12 +389,16 @@ def plot_y_diff(X, attn, yhat, ynew_list, usehexbin=False) :
     else :
         plt.scatter(a, b, s=1)
 
-    plt.xlabel("Attention")
-    plt.ylabel("$\\bigtriangleup y$")
-    plt.title("Attention vs change in output")
+    plt.xlabel("Attention" if xlabel is None else xlabel)
+    plt.ylabel("$\\bigtriangleup y$" if ylabel is None else ylabel)
+    plt.title("Attention vs change in output" if title is None else title)
+
+    if save_name is not None :
+        plt.savefig(dirname + "/" + save_name, bbox_inches='tight')
+
     plt.show()
 
-def plot_attn_diff(X, attn, attn_new, title=None, usehexbin=False) :
+def plot_attn_diff(X, attn, attn_new, title=None, xlabel=None, ylabel=None, save_name=None, dirname='', usehexbin=False) :
     a = []
     b = []
     for i in range(len(attn)) :
@@ -391,14 +411,18 @@ def plot_attn_diff(X, attn, attn_new, title=None, usehexbin=False) :
     else :
         plt.scatter(a, b, s=1)
 
-    plt.xlabel("Old Attention")
-    plt.ylabel("New Attention")
+    plt.xlabel("Old Attention" if xlabel is None else xlabel)
+    plt.ylabel("New Attention" if ylabel is None else ylabel)
     plt.title("Old vs New Attention" if title is None else title)
+
+    if save_name is not None :
+        plt.savefig(dirname + "/" + save_name, bbox_inches='tight')
+
     plt.show()
 
 ######################################################################################################
 
-def plot_pertub_embedding(X, attn, yhat, perturb_E_outputs, usehexbin=False) :
+def plot_pertub_embedding(X, attn, yhat, perturb_E_outputs, usehexbin=False, dirname='') :
     y_diff = [np.abs(perturb_E_outputs[i] - yhat[i]).mean(1) for i in range(len(X))]
 
     a = []
@@ -406,7 +430,7 @@ def plot_pertub_embedding(X, attn, yhat, perturb_E_outputs, usehexbin=False) :
     for i in range(len(attn)) :
         L = len(X[i])
         a += list(attn[i][1:L-1])
-        f = np.abs(y_diff[i][1:L-1])
+        f = y_diff[i][1:L-1]
         f = f / f.sum()
         b += list(f)
 
@@ -416,6 +440,7 @@ def plot_pertub_embedding(X, attn, yhat, perturb_E_outputs, usehexbin=False) :
         plt.scatter(a, b, s=1)
 
     plt.xlabel("Attention")
-    plt.ylabel("$\\bigtriangleup y$")
+    plt.ylabel("$p(y|E+e) - p(y|E)$")
     plt.title("Attention vs change in output")
+    plt.savefig(dirname + "/Embedding_Perturb.pdf", bbox_inches='tight')
     plt.show()

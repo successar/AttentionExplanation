@@ -447,8 +447,6 @@ class Model() :
 
             if hasattr(self, 'vec') :
                 freqs = self.vec.freq.copy()
-                per = np.percentile(freqs, 90)
-                freqs[freqs < per] = 0
                 freqs = torch.Tensor(freqs).cuda()
                 freqs = freqs / torch.sum(freqs)
             else :
@@ -495,11 +493,8 @@ class Model() :
 
         if hasattr(self, 'vec') :
             freqs = self.vec.freq.copy()
-            per = np.percentile(freqs, 90)
-            freqs[freqs < per] = 0
             freqs = torch.Tensor(freqs).cuda()
             freqs = freqs / torch.sum(freqs)
-            print("Non Zero : ", sum(freqs != 0))
         else :
             raise NotImplementedError("No Vec !!!")
 
@@ -519,7 +514,7 @@ class Model() :
             best_attn_idxs.append(best_attn_idx.cpu().data.numpy())
 
             for v in tqdm_notebook(range(sample_vocab)) :
-                sv = torch.multinomial(freqs, batch_data.B).cuda()
+                sv = torch.multinomial(freqs, batch_data.B, replacement=True).cuda()
                 ws[:, v] = sv.cpu().data.numpy()
 
                 for k in range(topnum) :
@@ -602,6 +597,7 @@ class Model() :
             batch_doc = data[n:n+bsize]
             batch_data = self.get_batch_variable(batch_doc)
             batch_data.keep_grads = True
+            batch_data.detach = True
 
             self.encoder(batch_data)
             self.decoder(batch_data)
@@ -714,50 +710,6 @@ class Model() :
         outputs = [x for y in outputs for x in y]
                     
         return outputs, grads 
-
-    def copy_H_run(self, data) :
-        self.encoder.train()
-        self.decoder.train()
-        bsize = self.bsize
-        N = len(data)
-
-        grads = []
-        H_change = []
-        outputs = []
-
-        for n in tqdm_notebook(range(0, N, bsize)) :
-            batch_doc = data[n:n+bsize]
-            batch_data = self.get_batch_variable(batch_doc)
-
-            pa = np.zeros((batch_data.B, batch_data.maxlen))
-            po = np.zeros((batch_data.B, batch_data.maxlen))
-            ph = np.zeros((batch_data.B, batch_data.maxlen))
-
-            self.encoder(batch_data)
-            for i in range(1, batch_data.maxlen-1) :
-                hidden_copy = batch_data.hidden.clone()
-                H = self.encoder.rnn.hidden_size
-                hidden_copy[:, i, H:] = hidden_copy[:, i+1, H:]
-                hidden_copy[:, i, :H] = hidden_copy[:, i-1, :H]
-
-                batch_data.hidden_volatile = hidden_copy
-                self.decoder.get_attention(batch_data)
-                self.decoder.get_output(batch_data)
-
-                ph[:, i] = torch.abs(batch_data.hidden[:, i] - hidden_copy[:, i]).mean(-1).cpu().data.numpy()
-                pa[:, i] = batch_data.attn_volatile[:, i].cpu().data.numpy()
-                po[:, i] = torch.sigmoid(batch_data.predict_volatile).squeeze(-1).cpu().data.numpy()
-
-            grads.append(pa)
-            outputs.append(po)
-            H_change.append(ph)
-            
-
-        grads = [x for y in grads for x in y]
-        outputs = [x for y in outputs for x in y]
-        H_change = [x for y in H_change for x in y]
-                    
-        return outputs, grads, H_change 
     
     def remove_and_run(self, data) :
         self.encoder.train()

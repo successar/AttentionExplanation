@@ -52,7 +52,6 @@ def filterbylength(X, y, min_length = None, max_length = None) :
 
     return X, y
 
-
 def evaluate_and_print(model, X, y) :
     yhat, attn = model.evaluate(X)
     yhat = np.array(yhat)[:, 0]

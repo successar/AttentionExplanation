@@ -92,7 +92,10 @@ class EncoderRNN(nn.Module) :
             weight = torch.Tensor(pre_embed)
             weight[0, :].zero_()
 
-        self.embedding = nn.Embedding(vocab_size, embed_size, _weight=weight, padding_idx=0)
+            self.embedding = nn.Embedding(vocab_size, embed_size, _weight=weight, padding_idx=0)
+        else :
+            self.embedding = nn.Embedding(vocab_size, embed_size, padding_idx=0)
+
         self.hidden_size = hidden_size
         self.rnn = nn.LSTM(input_size=embed_size, hidden_size=hidden_size, batch_first=True, bidirectional=True)
 
@@ -117,6 +120,10 @@ class EncoderRNN(nn.Module) :
         lengths = data.lengths
 
         embedding = self.embedding(seq) #(B, L, E)
+
+        if isTrue(data, 'perturb_E') :
+            pidx = data.perturb_idx
+            embedding[:, pidx, :] += torch.randn(embedding.shape[0], embedding.shape[2]).cuda() * 0.01
 
         packseq = nn.utils.rnn.pack_padded_sequence(embedding, lengths, batch_first=True)
 
@@ -215,7 +222,6 @@ class EncoderRNN(nn.Module) :
         Hb1 = Hb1[::-1]
         data.Hcell_zero = torch.cat([torch.cat([Hf1[x], Hb1[x]], dim=-1) for x in range(T)], dim=1)
        
-
 class AttnDecoder(nn.Module) :
     def __init__(self, hidden_size) :
         super().__init__()
@@ -274,7 +280,6 @@ class AttnDecoder(nn.Module) :
         predict = self.linear_1(output)
         data.predict_zero = predict
 
-
 class Adversary(nn.Module) :
     def __init__(self, decoder=None) :
         super().__init__()
@@ -299,7 +304,7 @@ class Adversary(nn.Module) :
         return jsd.unsqueeze(-1)
 
     def forward(self, data) :
-        data.hidden_volatile = data.hidden
+        data.hidden_volatile = data.hidden.detach()
 
         if data.adversary_type == 'perturb' :
             new_attn = torch.log(data.attn.detach().clone()) 
@@ -330,7 +335,6 @@ class Adversary(nn.Module) :
         data.attn_volatile = nn.Softmax(dim=-1)(log_attn)
         self.decoder.get_output(data)
         data.predict_volatile = torch.sigmoid(data.predict_volatile)
-
 
 class Model() :
     def __init__(self, vocab_size, embed_size, bsize, hidden_size=128, pre_embed=None, pos_weight=1, dirname='') :
@@ -835,6 +839,13 @@ class Model() :
     def adversarial(self, data, _type='perturb') :
         self.encoder.eval()
         self.decoder.eval()
+
+        for p in self.encoder.parameters() :
+            p.requires_grad = False
+
+        for p in self.decoder.parameters() :
+            p.requires_grad = False
+
         bsize = self.bsize
         N = len(data)
 
@@ -863,7 +874,7 @@ class Model() :
         
         return adverse_output, adverse_attn
 
-    def perturbation_embedding(self, data) :
+    def perturbation_embedding(self, data, num_pert=10) :
         self.encoder.train()
         self.decoder.train()
         bsize = self.bsize
@@ -874,19 +885,18 @@ class Model() :
         for n in tqdm_notebook(range(0, N, bsize)) :
             batch_doc = data[n:n+bsize]
             batch_data = self.get_batch_variable(batch_doc)
-            po = np.zeros((batch_data.B, batch_data.maxlen))
+            po = np.zeros((batch_data.B, batch_data.maxlen, num_pert))
 
             for i in range(1, batch_data.maxlen - 1) :
                 batch_data = self.get_batch_variable(batch_doc)
+                for j in range(num_pert) :
+                    batch_data.perturb_E = True
+                    batch_data.perturb_idx = i
 
-                batch_data.seq = torch.cat([batch_data.seq[:, :i], batch_data.seq[:, i+1:]], dim=-1)
-                batch_data.lengths = batch_data.lengths - 1
-                batch_data.masks = torch.cat([batch_data.masks[:, :i], batch_data.masks[:, i+1:]], dim=-1)
+                    self.encoder(batch_data)
+                    self.decoder(batch_data)
 
-                self.encoder(batch_data)
-                self.decoder(batch_data)
-
-                po[:, i] = torch.sigmoid(batch_data.predict).squeeze(-1).cpu().data.numpy()
+                    po[:, i, j] = torch.sigmoid(batch_data.predict).squeeze(-1).cpu().data.numpy()
 
             outputs.append(po)
 

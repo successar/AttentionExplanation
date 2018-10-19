@@ -66,7 +66,8 @@ def evaluate_and_print(model, X, y) :
 def calc_entropy(X, attn) :
     H = []
     for i in range(len(X)) :
-        h = attn[i][:len(X[i])]
+        L = len(X[i])
+        h = attn[i][1:L-1]
         a = h * np.log(np.clip(h, a_min=1e-8, a_max=None))
         a = -a.sum()
         H.append(a)
@@ -76,10 +77,11 @@ def calc_entropy(X, attn) :
 def get_entropy(X, attn) :
     unif_H, attn_H = [], []
     for i in range(len(X)) :
-        h = attn[i][:len(X[i])]
+        L = len(X[i])
+        h = attn[i][1:L-1]
         a = h * np.log(np.clip(h, a_min=1e-8, a_max=None))
         a = -a.sum()
-        unif_H.append(np.log(len(X[i])))
+        unif_H.append(np.log(L-2))
         attn_H.append(a)
 
     return unif_H, attn_H
@@ -87,10 +89,11 @@ def get_entropy(X, attn) :
 def plot_entropy(X, attn) :
     unif_H, attn_H = [], []
     for i in range(len(X)) :
-        h = attn[i][:len(X[i])]
+        L = len(X[i])
+        h = attn[i][1:L-1]
         a = h * np.log(np.clip(h, a_min=1e-8, a_max=None))
         a = -a.sum()
-        unif_H.append(np.log(len(X[i])))
+        unif_H.append(np.log(L-2))
         attn_H.append(a)
 
     plt.scatter(attn_H, unif_H, s=1)
@@ -115,11 +118,11 @@ def print_attn(sentence, attention, idx=None) :
 def plot_diff(sentence_1, idx, new_word, old_attn, new_attn) :
     # need vec in environment
     L = len(sentence_1)
-    print_attn(sentence_1, old_attn[:L], idx)
+    print_attn(sentence_1, old_attn[1:L-1], idx)
     sentence_1 = [x for x in sentence_1]
     sentence_1[idx] = new_word
     print("-"*20)
-    print_attn(sentence_1, new_attn[:L], idx)
+    print_attn(sentence_1, new_attn[1:L-1], idx)
 
 #######################################################################################################################
 
@@ -142,8 +145,9 @@ def plot_grads(X, attn, grads) :
         xxe = grads[k]    
         a, x = [], []
         for i in range(len(xxe)) :
-            a += list(attn[i][:len(X[i])])
-            x += list(xxe[i][:len(X[i])])
+            L = len(X[i])
+            a += list(attn[i][1:L-1])
+            x += list(xxe[i][1:L-1])
             
         coef = np.corrcoef(a, x)[0, 1]
         axes = ax[colnum]
@@ -182,7 +186,7 @@ def generate_medians_from_sampling_top(output, attn, yhat) :
     plt.show()
 
 def get_distractors(sampled_output, attn_hat) :
-    perts_attn, words_sampled, best_attn_idxs = sampled_output
+    perts_attn, words_sampled, best_attn_idxs, perts_output = sampled_output
     perts_attn_med = [np.median(perts_attn[i], 1) for i in range(len(perts_attn))]
     
     n_top = perts_attn[0].shape[2]
@@ -229,7 +233,7 @@ def print_few_distractors(vec, X, attn_hat, sampled_output, distractors) :
 
 def plot_permutations(permutations, X, yhat, attn) :
     perm_med = np.array([np.median(x) for x in permutations])
-    max_attn = [max(attn[i][:len(X[i])]) for i in range(len(attn))]
+    max_attn = [max(attn[i][1:len(X[i])-1]) for i in range(len(attn))]
 
     fig = plt.figure(figsize=(15, 15))
     gs = gridspec.GridSpec(4, 4, figure=fig)
@@ -300,8 +304,14 @@ def plot_adversarial(X, y_hat, attn, adversarial_outputs) :
     ax[0].set_title("True vs Adversarial Output")
     set_square_aspect(ax[0])
 
-    jds = [jsd(attn[i][:len(X[i])], ad_attn[i][:len(X[i])]) for i in range(len(X))]
+    jds = []
+    for i in range(len(X)) :
+        L = len(X[i])
+        j = jsd(attn[i][1:L-1], ad_attn[i][1:L-1])
+        jds.append(j)
+
     p30 = len(np.where(np.array(jds) > 0.3)[0]) / len(attn)
+
     ax[1].hist(jds, bins=20)
     ax[1].set_title("Histogram of JS Divergence : p30 = " + str(p30))
     set_square_aspect(ax[1])
@@ -338,9 +348,9 @@ def plot_adversarial(X, y_hat, attn, adversarial_outputs) :
 
 def print_adversarial_example(sentence, attn, attn_new) :
     L = len(sentence)
-    print_attn(sentence, attn[:L])
+    print_attn(sentence, attn[1:L-1])
     print('-'*20)
-    print_attn(sentence, attn_new[:L])
+    print_attn(sentence, attn_new[1:L-1])
 
 ############################################################################################################
 
@@ -354,10 +364,10 @@ def plot_y_diff(X, attn, yhat, ynew_list, usehexbin=False) :
     b = []
     for i in range(len(attn)) :
         L = len(X[i])
-        a += list(attn[i][:L])
-        f = np.abs(y_diff[i][:L])
+        a += list(attn[i][1:L-1])
+        f = np.abs(y_diff[i][1:L-1])
         f = f / f.sum()
-        b += list(f) #y_diff[i][:L])
+        b += list(f)
 
     if usehexbin :
         plt.hexbin(a, b, mincnt=1, gridsize=50, cmap='PiYG')
@@ -374,8 +384,8 @@ def plot_attn_diff(X, attn, attn_new, title=None, usehexbin=False) :
     b = []
     for i in range(len(attn)) :
         L = len(X[i])
-        a += list(attn[i][:L])
-        b += list(attn_new[i][:L])
+        a += list(attn[i][1:L-1])
+        b += list(attn_new[i][1:L-1])
 
     if usehexbin :
         plt.hexbin(a, b, mincnt=1, gridsize=50, cmap='PiYG')
@@ -385,4 +395,28 @@ def plot_attn_diff(X, attn, attn_new, title=None, usehexbin=False) :
     plt.xlabel("Old Attention")
     plt.ylabel("New Attention")
     plt.title("Old vs New Attention" if title is None else title)
+    plt.show()
+
+######################################################################################################
+
+def plot_pertub_embedding(X, attn, yhat, perturb_E_outputs, usehexbin=False) :
+    y_diff = [np.abs(perturb_E_outputs[i] - yhat[i]).mean(1) for i in range(len(X))]
+
+    a = []
+    b = []
+    for i in range(len(attn)) :
+        L = len(X[i])
+        a += list(attn[i][1:L-1])
+        f = np.abs(y_diff[i][1:L-1])
+        f = f / f.sum()
+        b += list(f)
+
+    if usehexbin :
+        plt.hexbin(a, b, mincnt=1, gridsize=50, cmap='PiYG')
+    else :
+        plt.scatter(a, b, s=1)
+
+    plt.xlabel("Attention")
+    plt.ylabel("$\\bigtriangleup y$")
+    plt.title("Attention vs change in output")
     plt.show()

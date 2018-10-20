@@ -379,7 +379,7 @@ def print_adversarial_example(sentence, attn, attn_new) :
 def jsd_bern(p, q) :
     return jsd(np.array([1-p, p]), np.array([1-q, q]))
 
-def plot_y_diff(X, attn, yhat, ynew_list, title=None, xlabel=None, ylabel=None, save_name=None, dirname='', usehexbin=False) :
+def plot_y_diff(X, attn, yhat, ynew_list, title=None, xlabel=None, ylabel=None, save_name=None, dirname='', usehexbin=True) :
     y_diff = [ynew_list[i] - yhat[i] for i in range(len(yhat))]
     
     a = []
@@ -405,7 +405,7 @@ def plot_y_diff(X, attn, yhat, ynew_list, title=None, xlabel=None, ylabel=None, 
 
     plt.show()
 
-def plot_attn_diff(X, attn, attn_new, title=None, xlabel=None, ylabel=None, save_name=None, dirname='', usehexbin=False) :
+def plot_attn_diff(X, attn, attn_new, title=None, xlabel=None, ylabel=None, save_name=None, dirname='', usehexbin=True) :
     a = []
     b = []
     for i in range(len(attn)) :

@@ -1,5 +1,6 @@
 from IPython.core.display import display, HTML
 import re
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,6 +12,12 @@ def set_square_aspect(axes) :
     x0,x1 = axes.get_xlim()
     y0,y1 = axes.get_ylim()
     axes.set_aspect(abs(x1-x0)/abs(y1-y0))
+
+def pdump(model, values, filename) :
+    pickle.dump(values, open(model.dirname + '/' + filename + '_pdump.pkl', 'wb'))
+
+def pload(model, filename) :
+    return pickle.load(open(model.dirname + '/' + filename + '_pdump.pkl', 'rb'))
 
 #################### Preprocessing Begin ############################################
 
@@ -179,7 +186,7 @@ def generate_medians_from_sampling_top(output, attn, yhat, dirname='') :
         for j in range(n_top) :
             meds.append(m[best_attn_idxs[i][j], j])
             attn_meds.append(attn[i][best_attn_idxs[i][j]])
-            out_sum.append(perts_output_sum[i][j] - yhat[i])
+            out_sum.append(np.abs(perts_output_sum[i][j] - yhat[i]))
 
     plt.scatter(attn_meds, meds, s=1)
     plt.xlabel("Attention")

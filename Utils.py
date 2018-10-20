@@ -188,14 +188,14 @@ def generate_medians_from_sampling_top(output, attn, yhat, dirname='') :
             attn_meds.append(attn[i][best_attn_idxs[i][j]])
             out_sum.append(np.abs(perts_output_sum[i][j] - yhat[i]))
 
-    plt.scatter(attn_meds, meds, s=1)
+    plt.hexbin(attn_meds, meds, mincnt=1, gridsize=100, cmap='PiYG')
     plt.xlabel("Attention")
     plt.ylabel("Median Attention")
     plt.title("Attention vs Median Attention at position")
     plt.savefig(dirname + '/substitute_median.pdf', bbox_inches='tight')
     plt.show()
 
-    plt.scatter(attn_meds, out_sum, s=1)
+    plt.hexbin(attn_meds, out_sum, mincnt=1, gridsize=100, cmap='PiYG')
     plt.xlabel("Attention")
     plt.ylabel("E_{w~p{w}} [p(y|c, w)]")
     plt.title("Attention vs output with subsitutions")

@@ -385,7 +385,7 @@ def plot_y_diff(X, attn, yhat, ynew_list, title=None, xlabel=None, ylabel=None, 
         b += list(f)
 
     if usehexbin :
-        plt.hexbin(a, b, mincnt=1, gridsize=50, cmap='PiYG')
+        plt.hexbin(a, b, mincnt=1, gridsize=100, cmap='PiYG')
     else :
         plt.scatter(a, b, s=1)
 
@@ -407,7 +407,7 @@ def plot_attn_diff(X, attn, attn_new, title=None, xlabel=None, ylabel=None, save
         b += list(attn_new[i][1:L-1])
 
     if usehexbin :
-        plt.hexbin(a, b, mincnt=1, gridsize=50, cmap='PiYG')
+        plt.hexbin(a, b, mincnt=1, gridsize=100, cmap='PiYG')
     else :
         plt.scatter(a, b, s=1)
 
@@ -435,7 +435,7 @@ def plot_pertub_embedding(X, attn, yhat, perturb_E_outputs, usehexbin=False, dir
         b += list(f)
 
     if usehexbin :
-        plt.hexbin(a, b, mincnt=1, gridsize=50, cmap='PiYG')
+        plt.hexbin(a, b, mincnt=1, gridsize=100, cmap='PiYG')
     else :
         plt.scatter(a, b, s=1)
 

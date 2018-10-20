@@ -839,7 +839,7 @@ class Model() :
             batch_data = self.get_batch_variable(batch_doc)
             po = np.zeros((batch_data.B, batch_data.maxlen, num_pert))
 
-            for i in range(1, batch_data.maxlen - 1) :
+            for i in tqdm_notebook(range(1, batch_data.maxlen - 1)) :
                 batch_data = self.get_batch_variable(batch_doc)
                 for j in range(num_pert) :
                     batch_data.perturb_E = True

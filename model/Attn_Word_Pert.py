@@ -47,7 +47,6 @@ class Holder() :
         self.seq = torch.LongTensor(expanded).cuda()
 
         masks = np.array(masks)
-        masks = masks #NOT IDXED
         self.masks = torch.ByteTensor(masks).cuda()
 
         self.masks_no_ends = torch.ByteTensor(np.array(masks_no_ends)).cuda()
@@ -55,9 +54,7 @@ class Holder() :
         self.correcting_idxs = torch.LongTensor(np.argsort(idxs)).cuda()
         self.sorting_idxs = torch.LongTensor(idxs).cuda()
 
-        self.hidden_seq = []
         self.hidden = None
-
         self.predict = None
         self.attn = None
 
@@ -221,6 +218,22 @@ class EncoderRNN(nn.Module) :
 
         Hb1 = Hb1[::-1]
         data.Hcell_zero = torch.cat([torch.cat([Hf1[x], Hb1[x]], dim=-1) for x in range(T)], dim=1)
+        
+class AffineAttention(nn.Module) :
+    def __init__(self, hidden_size) :
+        self.attn1 = nn.Linear(hidden_size * 2, hidden_size)
+        self.attn2 = nn.Linear(hidden_size, 1, bias=False)
+        
+    def forward(self, data) :
+        hidden = data.hidden
+        masks = data.masks
+        
+        attn1 = nn.Tanh()(self.attn1(output))
+        attn2 = self.attn2(attn1).squeeze(-1)
+        attn2.masked_fill_(mask, -float('inf'))
+        attn = nn.Softmax(dim=-1)(attn2)
+        
+        data.attn = attn
        
 class AttnDecoder(nn.Module) :
     def __init__(self, hidden_size) :
@@ -229,6 +242,10 @@ class AttnDecoder(nn.Module) :
         self.linear_1 = nn.Linear(hidden_size*2, 1)
         self.attn1 = nn.Linear(hidden_size*2, hidden_size)
         self.attn2 = nn.Linear(hidden_size, 1, bias=False)
+        
+    def decode(self, predict) :
+        predict = self.linear_1(predict)
+        return predict
 
     def forward(self, data) :
         output = data.hidden
@@ -247,7 +264,7 @@ class AttnDecoder(nn.Module) :
             attn = torch.gather(attn, -1, torch.LongTensor(permutation).cuda())
 
         predict = (attn.unsqueeze(-1) * output).sum(1)
-        predict = self.linear_1(predict)
+        predict = self.decode(predict)
 
         data.predict = predict
         data.attn = attn
@@ -267,17 +284,21 @@ class AttnDecoder(nn.Module) :
         data.attn_volatile = attn
 
     def get_output(self, data) :
-        output = data.hidden_volatile
-        attn = data.attn_volatile
+        output = data.hidden_volatile #(B, L, H)
+        attn = data.attn_volatile #(B, *, L)
 
-        predict = (attn.unsqueeze(-1) * output).sum(1)
-        predict = self.linear_1(predict)
+        if isTrue(data, 'multiattention') :
+            predict = (attn.unsqueeze(-1) * output.unsqueeze(1)).sum(2) #(B, *, H)
+            predict = self.decode(predict)
+        else :
+            predict = (attn.unsqueeze(-1) * output).sum(1)
+            predict = self.decode(predict)
 
         data.predict_volatile = predict
 
     def output_individual(self, data) :
         output = data.hidden_zero_run
-        predict = self.linear_1(output)
+        predict = self.decode(output)
         data.predict_zero = predict
 
 class Adversary(nn.Module) :
@@ -301,7 +322,10 @@ class Adversary(nn.Module) :
         m = 0.5 * (p + q)
         jsd = 0.5 * (self.kld(p, m) + self.kld(q, m))
 
-        return jsd.unsqueeze(-1)
+        Hp = torch.clamp(p, 0, 1) * torch.log(torch.clamp(p, 0, 1) + 1e-10)
+        Hp = (-Hp).sum(-1)
+        
+        return jsd.unsqueeze(-1) #- Hp.unsqueeze(-1)
 
     def forward(self, data) :
         data.hidden_volatile = data.hidden.detach()
@@ -319,9 +343,10 @@ class Adversary(nn.Module) :
         for _ in range(500) :
             log_attn = data.log_attn_volatile + 1 - 1
             log_attn.masked_fill_(data.masks, -float('inf'))
+            data.multiattention = False
             data.attn_volatile = nn.Softmax(dim=-1)(log_attn)
             self.decoder.get_output(data)
-            predict_new = data.predict_volatile
+            predict_new = data.predict_volatile 
             diff = nn.ReLU()(torch.abs(torch.sigmoid(predict_new) - torch.sigmoid(data.predict.detach())) - 1e-2)
             jsd = self.jsd(data.attn_volatile, data.attn.detach())
             loss =  -(jsd**1) + 500 * diff
@@ -336,8 +361,71 @@ class Adversary(nn.Module) :
         self.decoder.get_output(data)
         data.predict_volatile = torch.sigmoid(data.predict_volatile)
 
+class AdversaryMulti(nn.Module) :
+    def __init__(self, decoder=None) :
+        super().__init__()
+        self.decoder = decoder
+        self.K = 5
+
+    def kld(self, a1, a2) :
+        #(B, *, A), #(B, *, A)
+        a1 = torch.clamp(a1, 0, 1)
+        a2 = torch.clamp(a2, 0, 1)
+        log_a1 = torch.log(a1 + 1e-10)
+        log_a2 = torch.log(a2 + 1e-10)
+
+        kld = a1 * (log_a1 - log_a2)
+        kld = kld.sum(-1)
+
+        return kld
+
+    def jsd(self, p, q) :
+        m = 0.5 * (p + q)
+        jsd = 0.5 * (self.kld(p, m) + self.kld(q, m))
+        
+        return jsd.unsqueeze(-1)
+
+    def forward(self, data) :
+        data.hidden_volatile = data.hidden.detach()
+
+        new_attn = torch.log(data.generate_uniform_attn()).unsqueeze(1).repeat(1, self.K, 1) #(B, 10, L)
+        new_attn = new_attn + torch.randn(new_attn.size()).cuda()*3
+
+        new_attn.requires_grad = True
+        
+        data.log_attn_volatile = new_attn 
+        optim = torch.optim.Adam([data.log_attn_volatile], lr=0.01, amsgrad=True)
+
+        for _ in range(500) :
+            log_attn = data.log_attn_volatile + 1 - 1
+            log_attn.masked_fill_(data.masks.unsqueeze(1), -float('inf'))
+            data.attn_volatile = nn.Softmax(dim=-1)(log_attn) #(B, 10, L)
+            data.multiattention = True
+            self.decoder.get_output(data)
+            predict_new = data.predict_volatile #(B, 10, 1)
+
+            y_diff = torch.sigmoid(predict_new) - torch.sigmoid(data.predict.detach()).unsqueeze(1) #(B, 10, 1)
+            diff = nn.ReLU()(torch.abs(y_diff) - 1e-2) #(B, 10, 1)
+
+            jsd = self.jsd(data.attn_volatile, data.attn.detach().unsqueeze(1)) #(B, 10, 1)
+
+            cross_jsd = self.jsd(data.attn_volatile.unsqueeze(1), data.attn_volatile.unsqueeze(2))
+            
+            loss =  -(jsd**1) + 500 * diff
+            loss = loss.sum() - cross_jsd.sum(0).mean()
+            optim.zero_grad()
+            loss.backward()
+            optim.step()
+
+        log_attn = data.log_attn_volatile + 1 - 1
+        log_attn.masked_fill_(data.masks.unsqueeze(1), -float('inf'))
+        data.attn_volatile = nn.Softmax(dim=-1)(log_attn)
+        self.decoder.get_output(data)
+        data.predict_volatile = torch.sigmoid(data.predict_volatile)
+
 class Model() :
-    def __init__(self, vocab_size, embed_size, bsize, hidden_size=128, pre_embed=None, pos_weight=1, dirname='') :
+    def __init__(self, vocab_size, embed_size, bsize, hidden_size=128, 
+                       pre_embed=None, pos_weight=1, weight_decay=1e-5, dirname='') :
         self.bsize = bsize
         self.vocab_size = vocab_size
         self.embed_size = embed_size
@@ -346,15 +434,24 @@ class Model() :
         self.encoder = EncoderRNN(vocab_size, embed_size, self.hidden_size, pre_embed=pre_embed).cuda()
         self.decoder = AttnDecoder(self.hidden_size).cuda()
 
-        self.params = list(self.encoder.parameters()) + list(self.decoder.parameters())
-        self.optim = torch.optim.Adam(self.params, lr=0.001, weight_decay=1e-5)
+        # self.params = list(self.encoder.parameters()) + list(self.decoder.parameters())
+
+        self.encoder_params = list(self.encoder.parameters())
+        self.attn_params = list([v for k, v in self.decoder.named_parameters() if 'attn' in k])
+        self.decoder_params = list([v for k, v in self.decoder.named_parameters() if 'attn' not in k])
+
+        self.encoder_optim = torch.optim.Adam(self.encoder_params, lr=0.001, weight_decay=weight_decay)
+        self.attn_optim = torch.optim.Adam(self.attn_params, lr=0.001, weight_decay=weight_decay)
+        self.decoder_optim = torch.optim.Adam(self.decoder_params, lr=0.001, weight_decay=weight_decay)
+
         self.criterion = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([pos_weight]).cuda())
 
         self.adversary = Adversary(decoder=self.decoder)
+        self.adversarymulti = AdversaryMulti(decoder=self.decoder)
 
         import time
         self.time_str = time.ctime().replace(' ', '')
-        self.dirname = 'outputs/attn_word_' + dirname + '/' + self.time_str
+        self.dirname = 'outputs/attn_word_' + dirname
 
     def get_batch_variable(self, data) :
         data = Holder(data, do_sort=True)
@@ -391,9 +488,13 @@ class Model() :
             loss = bce_loss
 
             if train :
-                self.optim.zero_grad()
+                self.encoder_optim.zero_grad()
+                self.decoder_optim.zero_grad()
+                self.attn_optim.zero_grad()
                 loss.backward()
-                self.optim.step()
+                self.encoder_optim.step()
+                self.decoder_optim.step()
+                self.attn_optim.step()
 
             loss_total += float(loss.data.cpu().item())
         return loss_total*bsize/N
@@ -501,6 +602,9 @@ class Model() :
         for n in tqdm_notebook(range(0, N, bsize)) :
             batch_doc = data[n:n+bsize]
             batch_data = self.get_batch_variable(batch_doc)
+
+            if topnum is None :
+                topnum = batch_data.maxlen
 
             pa = np.zeros((batch_data.B, batch_data.maxlen, sample_vocab, topnum))
             ws = np.zeros((batch_data.B, sample_vocab))
@@ -697,7 +801,6 @@ class Model() :
 
             diff = torch.abs(batch_data.hidden - batch_data.Hcell_zero)
             diff = diff.mean(-1)
-            diff = diff / diff.sum(-1).unsqueeze(-1)
 
             batch_data.hidden_zero_run = batch_data.Hcell_zero
             self.decoder.output_individual(batch_data)
@@ -772,21 +875,20 @@ class Model() :
                     
         return permutations
     
-    def save_values(self, add_name='', save_model=True) :
-        dirname = self.dirname + '_' + add_name
+    def save_values(self, add_name='', add_dirname='', save_model=True) :
+        dirname = self.dirname + '/' + add_dirname + '/' + self.time_str + '_' + add_name
         os.makedirs(dirname, exist_ok=True)
         shutil.copy2(file_name, dirname + '/')
         if save_model :
             torch.save(self.encoder.state_dict(), dirname + '/enc.th')
             torch.save(self.decoder.state_dict(), dirname + '/dec.th')
-            torch.save(self.optim.state_dict(), dirname + '/optimizer.th')
 
         return dirname
 
     def load_values(self, dirname) :
         self.encoder.load_state_dict(torch.load(dirname + '/enc.th'))
         self.decoder.load_state_dict(torch.load(dirname + '/dec.th'))
-        self.optim.load_state_dict(torch.load(dirname + '/optimizer.th'))
+        # self.optim.load_state_dict(torch.load(dirname + '/optimizer.th'))
 
     def adversarial(self, data, _type='perturb') :
         self.encoder.eval()
@@ -816,7 +918,45 @@ class Model() :
             self.adversary(batch_data)
 
             attn_volatile = batch_data.attn_volatile.cpu().data.numpy()
-            predict_volatile = batch_data.predict_volatile.cpu().data.numpy()
+            predict_volatile = batch_data.predict_volatile.squeeze(-1).cpu().data.numpy()
+
+            adverse_attn.append(attn_volatile)
+            adverse_output.append(predict_volatile)
+
+        adverse_output = [x for y in adverse_output for x in y]
+        adverse_attn = [x for y in adverse_attn for x in y]
+        
+        return adverse_output, adverse_attn
+
+    def adversarial_multi(self, data, _type='perturb') :
+        self.encoder.eval()
+        self.decoder.eval()
+
+        for p in self.encoder.parameters() :
+            p.requires_grad = False
+
+        for p in self.decoder.parameters() :
+            p.requires_grad = False
+
+        bsize = self.bsize
+        N = len(data)
+
+        adverse_attn = []
+        adverse_output = []
+
+        for n in tqdm_notebook(range(0, N, bsize)) :
+            torch.cuda.empty_cache()
+            batch_doc = data[n:n+bsize]
+            batch_data = self.get_batch_variable(batch_doc)
+            batch_data.adversary_type = _type
+
+            self.encoder(batch_data)
+            self.decoder(batch_data)
+
+            self.adversarymulti(batch_data)
+
+            attn_volatile = batch_data.attn_volatile.cpu().data.numpy() #(B, 10, L)
+            predict_volatile = batch_data.predict_volatile.squeeze(-1).cpu().data.numpy() #(B, 10, 1)
 
             adverse_attn.append(attn_volatile)
             adverse_output.append(predict_volatile)

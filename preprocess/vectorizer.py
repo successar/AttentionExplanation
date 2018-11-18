@@ -64,6 +64,13 @@ class Vectorizer:
         
         self.cvec.stop_words_ = None
         
+    def add_word(self, word) :
+        if word not in self.word2idx :
+            idx = max(self.word2idx.values()) + 1
+            self.word2idx[word] = idx
+            self.idx2word[idx] = word
+            self.vocab_size += 1
+        
     def fit_docs(self, texts) :
         docs = self.process_to_docs(texts)
         self.fit(docs)

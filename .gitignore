@@ -3,5 +3,7 @@ preprocess/*/*
 caml-mimic/*
 __pycache__
 .ipynb_checkpoints
+.vscode
+TACL-Attention
 
 !preprocess/*/.gitkeep

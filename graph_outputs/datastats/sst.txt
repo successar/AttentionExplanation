@@ -1,0 +1,1 @@
+{"vocab_size": 16175, "embed_size": 300, "hidden_size": 128, "train_size": [[0, 3034], [1, 3321]], "test_size": [[0, 863], [1, 862]], "avg_length": 18.704169944925255, "min_length": 6, "max_length": 47, "std_length": 8.082032597326135}

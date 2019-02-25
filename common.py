@@ -55,7 +55,9 @@ def print_attn(sentence, attention, idx=None, latex=False) :
     
     display(HTML(''.join(l)))
     if latex : 
-        print(" ".join(latex_str))
+        return " ".join(latex_str)
+    else :
+        return ""
 
 ############################################################################################
 
@@ -90,20 +92,31 @@ def pload(model, filename) :
 
     return pickle.load(open(file, 'rb'))
 
-def push_graphs_to_main_directory(model, name) :
-    dirname = model.dirname
+import time
+
+def get_latest_model(dirname) :
+    dirs = [d for d in os.listdir(dirname) if 'evaluate.json' in os.listdir(os.path.join(dirname, d))]
+    if len(dirs) == 0 :
+        return None
+    max_dir = max(dirs, key=lambda s : time.strptime(s.replace('_', ' ')))
+    return os.path.join(dirname, max_dir)
+
+def push_graphs_to_main_directory(model_dirname, name) :
+    dirname = model_dirname
     files = os.listdir(dirname)
     files = [f for f in files if f.endswith('pdf')]
     
     for f in files :
         outdir = f[:-4]
-        os.makedirs('graph_outputs/' + outdir, exist_ok=True)
-        shutil.copyfile(model.dirname + '/' + f, 'graph_outputs/' + outdir + '/' + outdir + '_' + name + '.pdf')
+        output_name = os.path.join('graph_outputs', outdir)
+        os.makedirs(output_name, exist_ok=True)
+        shutil.copyfile(os.path.join(model_dirname, f), os.path.join(output_name, name + '.pdf'))
 
     files = os.listdir(dirname)
     files = [f for f in files if f.endswith('csv')]
     
     for f in files :
         outdir = f[:-4]
-        os.makedirs('graph_outputs/' + outdir, exist_ok=True)
-        shutil.copyfile(model.dirname + '/' + f, 'graph_outputs/' + outdir + '/' + outdir + '_' + name + '.csv')
+        output_name = os.path.join('graph_outputs', outdir)
+        os.makedirs(output_name, exist_ok=True)
+        shutil.copyfile(os.path.join(model_dirname, f), os.path.join(output_name, name + '.csv'))

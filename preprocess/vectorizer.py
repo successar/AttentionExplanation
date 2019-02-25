@@ -125,3 +125,11 @@ class Vectorizer:
     
     def map2idxs(self, words) :
         return [self.word2idx[x] if x in self.word2idx else self.word2idx[UNK] for x in sent]
+    
+    def add_frequencies(self, X) :
+        freq = np.zeros((self.vocab_size, ))
+        for x in X :
+            for w in x :
+                freq[w] += 1
+        freq = freq / np.sum(freq)
+        self.freq = freq

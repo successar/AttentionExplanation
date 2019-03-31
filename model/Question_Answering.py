@@ -1,203 +1,32 @@
 import json
 import os
 import shutil
+from copy import deepcopy
 
 import numpy as np
 import torch
 import torch.nn as nn
 from sklearn.utils import shuffle
 from tqdm import tqdm_notebook
+from allennlp.common import Params
 
 from .modelUtils import isTrue, get_sorting_index_with_noise_from_lengths
+from .modelUtils import BatchHolder, BatchMultiHolder
+
+from Transparency.model.modules.Decoder import AttnDecoderQA
+from Transparency.model.modules.Encoder import Encoder
+
+from .modelUtils import jsd as js_divergence
 
 file_name = os.path.abspath(__file__)
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
-class BatchHolder() : 
-    def __init__(self, data) :
-        maxlen = max([len(x) for x in data])
-        self.maxlen = maxlen
-        self.B = len(data)
-
-        lengths = []
-        expanded = []
-        masks = []
-
-        for _, d in enumerate(data) :
-            rem = maxlen - len(d)
-            expanded.append(d + [0]*rem)
-            lengths.append(len(d))
-            masks.append([1] + [0]*(len(d)-2) + [1]*(rem+1))
-
-        self.lengths = torch.LongTensor(np.array(lengths)).to(device)
-        self.seq = torch.LongTensor(np.array(expanded, dtype='int64')).to(device)
-        self.masks = torch.ByteTensor(np.array(masks)).to(device)
-
-        self.hidden = None
-        self.predict = None
-        self.attn = None
-
-    def generate_permutation(self) :
-        perm_idx = np.tile(np.arange(self.maxlen), (self.B, 1))
-
-        for i, x in enumerate(self.lengths) :
-            perm = np.random.permutation(x.item()-2) + 1
-            perm_idx[i, 1:x-1] = perm
-
-        return perm_idx
-
-    def generate_uniform_attn(self) :
-        attn = np.zeros((self.B, self.maxlen))
-        inv_l = 1. / self.lengths.cpu().data.numpy()
-        attn += inv_l[:, None]
-        return torch.Tensor(attn).to(device)
-
-class BatchMultiHolder() :
-    def __init__(self, **holders) :
-        for name, value in holders.items() :
-            setattr(self, name, value)
-
-class EncoderRNN(nn.Module) :
-    def __init__(self, vocab_size, embed_size, hidden_size, pre_embed=None) :
-        super().__init__()
-        self.embed_size = embed_size
-
-        if pre_embed is not None :
-            print("Setting Embedding")
-            weight = torch.Tensor(pre_embed)
-            weight[0, :].zero_()
-
-            self.embedding = nn.Embedding(vocab_size, embed_size, _weight=weight, padding_idx=0)
-        else :
-            self.embedding = nn.Embedding(vocab_size, embed_size, padding_idx=0)
-
-        self.hidden_size = hidden_size
-        self.rnn = nn.LSTM(input_size=embed_size, hidden_size=hidden_size, batch_first=True, bidirectional=True)
-
-    def forward(self, data) :
-        seq = data.seq
-        lengths = data.lengths
-        embedding = self.embedding(seq) #(B, L, E)
-        packseq = nn.utils.rnn.pack_padded_sequence(embedding, lengths, batch_first=True, enforce_sorted=False)
-        output, (h, c) = self.rnn(packseq)
-        output, lengths = nn.utils.rnn.pad_packed_sequence(output, batch_first=True, padding_value=0)
-
-        data.hidden = output
-        data.last_hidden = torch.cat([h[0], h[1]], dim=-1)
-
-        if isTrue(data, 'keep_grads') :
-            data.embedding = embedding
-            data.embedding.retain_grad()
-            data.hidden.retain_grad()
-
-class TanhAttention(nn.Module) :
-    def __init__(self, hidden_size) :
-        super().__init__()
-        self.attn1p = nn.Linear(hidden_size*2, hidden_size)
-        self.attn1q = nn.Linear(hidden_size*2, hidden_size)
-        self.attn2 = nn.Linear(hidden_size, 1, bias=False)
-
-    def forward(self, Poutput, Qoutput, mask) :
-        attn1 = nn.Tanh()(self.attn1p(Poutput) + self.attn1q(Qoutput).unsqueeze(1))
-        attn2 = self.attn2(attn1).squeeze(-1)
-        attn2.masked_fill_(mask, -float('inf'))
-        attn = nn.Softmax(dim=-1)(attn2) #(B, L)
-
-        return attn
-        
-class DotAttention(nn.Module) :
-    def __init__(self, hidden_size) :
-        super().__init__()
-        self.hidden_size = hidden_size
-
-    def forward(self, Poutput, Qoutput, mask) :
-        attn1 = torch.bmm(Poutput, Qoutput.unsqueeze(-1)) / self.hidden_size**0.5
-        attn1 = attn1.squeeze(-1)
-        attn1.masked_fill_(mask, -float('inf'))
-        attn = nn.Softmax(dim=-1)(attn1) #(B, L)
-
-        return attn
-
-class AttnDecoder(nn.Module) :
-    def __init__(self, hidden_size, output_size, attention='tanh') :
-        super().__init__()
-        self.hidden_size = hidden_size
-        self.linear_1q = nn.Linear(hidden_size*2, hidden_size)
-        self.linear_1p = nn.Linear(hidden_size*2, hidden_size)
-
-        self.linear_2 = nn.Linear(hidden_size, output_size)
-        if attention == 'tanh' :
-            self.attention = TanhAttention(hidden_size)
-        elif attention == 'dot' :
-            self.attention = DotAttention(hidden_size)
-        else :
-            raise NotImplementedError("No Attention Specified !!!")
-         
-    def decode(self, Poutput, Qoutput, entity_mask) :
-        predict = self.linear_2(nn.Tanh()(self.linear_1p(Poutput) + self.linear_1q(Qoutput))) #(B, O)
-        predict.masked_fill_(1 - entity_mask, -float('inf'))
-
-        return predict
-
-    def forward(self, data) :
-        Poutput = data.P.hidden #(B, H, L)
-        Qoutput = data.Q.last_hidden #(B, H)
-        mask = data.P.masks
-
-        attn = self.attention(Poutput, Qoutput, mask) #(B, L)
-
-        if isTrue(data, 'detach') :
-            attn = attn.detach()
-
-        if isTrue(data, 'permute') :
-            permutation = data.P.generate_permutation()
-            attn = torch.gather(attn, -1, torch.LongTensor(permutation).to(device))
-
-        context = (attn.unsqueeze(-1) * Poutput).sum(1) #(B, H)
-        predict = self.decode(context, Qoutput, data.entity_mask)
-
-        data.predict = predict
-        data.attn = attn
-
-    def get_output(self, data) :
-        Poutput = data.P.hidden_volatile #(B, L, H)
-        Qoutput = data.Q.last_hidden_volatile #(B, H)
-
-        attn = data.attn_volatile #(B, K, L)
-
-        if len(attn.shape) == 3 :
-            predict = (attn.unsqueeze(-1) * Poutput.unsqueeze(1)).sum(2) #(B, K, H)
-            predict = self.decode(predict, Qoutput.unsqueeze(1), data.entity_mask.unsqueeze(1))
-        else :
-            predict = (attn.unsqueeze(-1) * Poutput).sum(1) #(B, H)
-            predict = self.decode(predict, Qoutput, data.entity_mask)
-
-        data.predict_volatile = predict
 
 class AdversaryMulti(nn.Module) :
     def __init__(self, decoder=None) :
         super().__init__()
         self.decoder = decoder
         self.K = 5
-
-    def kld(self, a1, a2) :
-        #(B, *, A), #(B, *, A)
-        a1 = torch.clamp(a1, 0, 1)
-        a2 = torch.clamp(a2, 0, 1)
-        log_a1 = torch.log(a1 + 1e-10)
-        log_a2 = torch.log(a2 + 1e-10)
-
-        kld = a1 * (log_a1 - log_a2)
-        kld = kld.sum(-1)
-
-        return kld
-
-    def jsd(self, p, q) :
-        m = 0.5 * (p + q)
-        jsd = 0.5 * (self.kld(p, m) + self.kld(q, m))
-        
-        return jsd.unsqueeze(-1)
 
     def forward(self, data) :
         data.P.hidden_volatile = data.P.hidden.detach()
@@ -222,9 +51,9 @@ class AdversaryMulti(nn.Module) :
             y_diff = self.output_diff(predict_new, data.predict.detach().unsqueeze(1))
             diff = nn.ReLU()(y_diff - 1e-2) #(B, *, 1)
 
-            jsd = self.jsd(data.attn_volatile, data.attn.detach().unsqueeze(1)) #(B, *, 1)
+            jsd = js_divergence(data.attn_volatile, data.attn.detach().unsqueeze(1)) #(B, *, 1)
 
-            cross_jsd = self.jsd(data.attn_volatile.unsqueeze(1), data.attn_volatile.unsqueeze(2))
+            cross_jsd = js_divergence(data.attn_volatile.unsqueeze(1), data.attn_volatile.unsqueeze(2))
 
             loss =  -(jsd**1) + 500 * diff #(B, *, 1)
             loss = loss.sum() - cross_jsd.sum(0).mean()
@@ -247,47 +76,41 @@ class AdversaryMulti(nn.Module) :
         return y_diff
 
 class Model() :
-    def __init__(self, vocab_size, embed_size, output_size, bsize, 
-                       hidden_size=128, pre_embed=None, weight_decay=1e-5, 
-                       attention='tanh', dirname='') :
-        self.bsize = bsize
-        self.vocab_size = vocab_size
-        self.embed_size = embed_size
-        self.output_size = output_size
-        self.hidden_size = hidden_size
-        self.attention = attention
+    def __init__(self, configuration, pre_embed=None) :
+        configuration = deepcopy(configuration)
+        self.configuration = deepcopy(configuration)
 
-        self.config = {
-            'dirname' : dirname,
-            'vocab_size' : vocab_size,
-            'embed_size' : embed_size,
-            'output_size' : output_size,
-            'bsize' : bsize,
-            'hidden_size' : hidden_size,
-            'weight_decay' : weight_decay,
-            'attention' : attention
-        }
+        configuration['model']['encoder']['pre_embed'] = pre_embed
 
-        self.Pencoder = EncoderRNN(vocab_size, embed_size, self.hidden_size, pre_embed=pre_embed).to(device)
-        self.Qencoder = EncoderRNN(vocab_size, embed_size, self.hidden_size, pre_embed=pre_embed).to(device)
-        self.decoder = AttnDecoder(self.hidden_size, output_size, attention).to(device)
+        encoder_copy = deepcopy(configuration['model']['encoder'])
+        self.Pencoder = Encoder.from_params(Params(configuration['model']['encoder'])).to(device)
+        self.Qencoder = Encoder.from_params(Params(encoder_copy)).to(device)
+
+        configuration['model']['decoder']['hidden_size'] = self.Pencoder.output_size
+        self.decoder = AttnDecoderQA.from_params(Params(configuration['model']['decoder'])).to(device)
+
+        self.bsize = configuration['training']['bsize']
+
         self.adversary_multi = AdversaryMulti(self.decoder)
 
+        weight_decay = configuration['training'].get('weight_decay', 1e-5)
         self.params = list(self.Pencoder.parameters()) + list(self.Qencoder.parameters()) + list(self.decoder.parameters())
         self.optim = torch.optim.Adagrad(self.params, lr=0.05, weight_decay=weight_decay)
         self.criterion = nn.CrossEntropyLoss()
 
         import time
+        dirname = configuration['training']['exp_dirname']
+        basepath = configuration['training'].get('basepath', 'outputs')
         self.time_str = time.ctime().replace(' ', '_')
-        self.dirname = os.path.join('outputs', dirname, self.time_str)
+        self.dirname = os.path.join(basepath, dirname, self.time_str)
 
     @classmethod
     def init_from_config(cls, dirname, **kwargs) :
         config = json.load(open(dirname + '/config.json', 'r'))
-        obj = cls(**config, **kwargs)
+        config.update(kwargs)
+        obj = cls(config)
         obj.load_values(dirname)
         return obj
-
 
     def train(self, train_data, train=True) :
         docs_in = train_data.P
@@ -335,6 +158,9 @@ class Model() :
 
             loss = ce_loss
 
+            if hasattr(batch_data, 'reg_loss') :
+                loss += batch_data.reg_loss
+
             if train :
                 self.optim.zero_grad()
                 loss.backward()
@@ -355,11 +181,9 @@ class Model() :
         bsize = self.bsize
         N = len(questions)
 
-        batches = list(range(0, N, bsize))
-
         outputs = []
         attns = []
-        for n in tqdm_notebook(batches) :
+        for n in tqdm_notebook(range(0, N, bsize)) :
             torch.cuda.empty_cache()
             batch_doc = docs[n:n+bsize]
             batch_ques = questions[n:n+bsize]
@@ -376,12 +200,14 @@ class Model() :
             self.decoder(batch_data)
 
             batch_data.predict = torch.argmax(batch_data.predict, dim=-1)
-            attn = batch_data.attn
+            if self.decoder.use_attention :
+                attn = batch_data.attn
+                attns.append(attn.cpu().data.numpy())
 
             predict = batch_data.predict.cpu().data.numpy()
             outputs.append(predict)
             
-            attns.append(attn.cpu().data.numpy())
+            
 
         outputs = [x for y in outputs for x in y]
         attns = [x for y in attns for x in y]
@@ -391,9 +217,11 @@ class Model() :
     def save_values(self, use_dirname=None, save_model=True) :
         if use_dirname is not None :
             dirname = use_dirname
+        else :
+            dirname = self.dirname
         os.makedirs(dirname, exist_ok=True)
         shutil.copy2(file_name, dirname + '/')
-        json.dump(self.config, open(dirname + '/config.json', 'w'))
+        json.dump(self.configuration, open(dirname + '/config.json', 'w'))
 
         if save_model :
             torch.save(self.Pencoder.state_dict(), dirname + '/encP.th')
@@ -419,12 +247,10 @@ class Model() :
         bsize = self.bsize
         N = len(questions)
 
-        batches = list(range(0, N, bsize))
-
         permutations_predict = []
         permutations_diff = []
 
-        for n in tqdm_notebook(batches) :
+        for n in tqdm_notebook(range(0, N, bsize)) :
             torch.cuda.empty_cache()
             batch_doc = docs[n:n+bsize]
             batch_ques = questions[n:n+bsize]
@@ -455,7 +281,6 @@ class Model() :
                 predict_difference = self.adversary_multi.output_diff(batch_data.predict, predict_true)
                 batch_perms_diff[:, i] = predict_difference.squeeze(-1).cpu().data.numpy()
                 
-            
             permutations_predict.append(batch_perms_predict)
             permutations_diff.append(batch_perms_diff)
 
@@ -469,9 +294,9 @@ class Model() :
         questions = data.Q
         entity_masks = data.E
 
-        self.Pencoder.train()
-        self.Qencoder.train()
-        self.decoder.train()
+        self.Pencoder.eval()
+        self.Qencoder.eval()
+        self.decoder.eval()
 
         print(self.adversary_multi.K)
         
@@ -531,11 +356,9 @@ class Model() :
         bsize = self.bsize
         N = len(questions)
 
-        batches = list(range(0, N, bsize))
-
         grads = {'XxE' : [], 'XxE[X]' : [], 'H' : []}
 
-        for n in batches :
+        for n in range(0, N, bsize) :
             torch.cuda.empty_cache()
             batch_doc = docs[n:n+bsize]
             batch_ques = questions[n:n+bsize]
@@ -586,17 +409,12 @@ class Model() :
         self.Pencoder.train()
         self.Qencoder.train()
         self.decoder.train()
-
-        self.Pencoder.gen_cells()
         
         bsize = self.bsize
         N = len(questions)
-
-        batches = list(range(0, N, bsize))
-
         output_diffs = []
 
-        for n in tqdm_notebook(batches) :
+        for n in tqdm_notebook(range(0, N, bsize)) :
             torch.cuda.empty_cache()
             batch_doc = docs[n:n+bsize]
             batch_ques = questions[n:n+bsize]

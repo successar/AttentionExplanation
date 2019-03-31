@@ -5,7 +5,6 @@ from collections import defaultdict
 import pandas as pd
 from IPython.display import display
 
-
 def calc_metrics_classification(target, predictions) :
     if predictions.shape[-1] == 1 :
         predictions = predictions[:, 0]
@@ -20,6 +19,10 @@ def calc_metrics_classification(target, predictions) :
     if predictions.shape[-1] == 2 :
         rep.update({'roc_auc' : roc_auc_score(target, predictions[:, 1])})
         rep.update({"pr_auc" : average_precision_score(target, predictions[:, 1])})
+    return rep
+
+def calc_metrics_qa(target, predictions) :
+    rep = {'accuracy' : accuracy_score(target, predictions)}
     return rep
 
 def calc_metrics_regression(target, predictions) :
@@ -55,9 +58,10 @@ def calc_metrics_multilabel(target, predictions) :
     return rep
 
 metrics_map = {
-    'classifier' : calc_metrics_classification,
-    'regression' : calc_metrics_regression,
-    'multilabel' : calc_metrics_multilabel
+    'Single_Label' : calc_metrics_classification, 
+    'Multi_Label' : calc_metrics_multilabel,
+    'Regression' : calc_metrics_regression,
+    'qa' : calc_metrics_qa
 }
 
 def print_metrics(metrics) :
@@ -69,7 +73,7 @@ def print_metrics(metrics) :
     for k, v in tabular.items() :
         if not k.startswith('label_') :
             d[k.split('/', 1)[0]][k.split('/', 1)[1]] = v
-        if '/1/' in k :
+        if '/1/' in k or 'auc' in k:
             d[k.split('/', 1)[0]][k.split('/', 1)[1]] = v
 
     df = pd.DataFrame(d)

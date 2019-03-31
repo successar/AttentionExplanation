@@ -5,5 +5,7 @@ __pycache__
 .ipynb_checkpoints
 .vscode
 TACL-Attention
+graph_outputs
+Workshop-NAACL-Attention
 
 !preprocess/*/.gitkeep

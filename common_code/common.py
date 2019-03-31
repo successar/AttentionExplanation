@@ -4,8 +4,7 @@ import re
 import shutil
 import sys
 import json
-sys.path.insert(0, 'preprocess/')
-import vectorizer
+from Transparency.preprocess import vectorizer
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,6 +13,8 @@ import pandas as pd
 import torch
 from IPython.core.display import HTML, display
 from tqdm import tqdm_notebook
+
+from collections import defaultdict
 
 np.set_printoptions(suppress=True)
 
@@ -49,15 +50,34 @@ def print_attn(sentence, attention, idx=None, latex=False) :
         if idx is not None and i == idx :
             add_string = "border-style : solid;"
         
+        if a < 0 : hue = '350'
+        else : hue = '202'
+        a = abs(a)
         v = "{:.2f}".format((1-a) * -0.5 + 0.5)
-        l.append('<span style="background-color:hsl(202,100%,' + str((1-a) * 50 + 50) + '%);' + add_string + '">' + w + ' </span>')
-        latex_str.append('{\\setlength{\\fboxsep}{0pt}\\colorbox[Hsb]{202, ' + v + ', 1.0}{\\strut ' + w + '}}')
+        l.append('<span style="background-color:hsl(' + hue + ',100%,' + str((1-a) * 50 + 50) + '%);' + add_string + '">' + w + ' </span>')
+        latex_str.append('{\\setlength{\\fboxsep}{0pt}\\colorbox[Hsb]{'+hue+', ' + v + ', 1.0}{\\strut ' + w + '}}')
     
     display(HTML(''.join(l)))
     if latex : 
         return " ".join(latex_str)
     else :
         return ""
+
+def get_word_importance(dataset, sentence, attention) :
+    words_importance = defaultdict(float)
+    for w, a in zip(sentence, attention) :
+        words_importance[dataset.vec.idx2word[w]] += a
+
+    return words_importance
+
+def find_top_words(dataset, sentence, attention, n=20) :
+    words_importance = get_word_importance(dataset, sentence, attention)
+    top_words = dict(sorted(words_importance.items(), key=lambda x: x[1])[-n:])
+    return top_words
+
+def find_top_words_in_all(dataset, sentences, attentions, n=20) :
+    X = [find_top_words(dataset, s, a, n) for s, a in zip(sentences, attentions)]
+    return X
 
 ############################################################################################
 
@@ -77,22 +97,29 @@ def jsd(p, q) :
 
     return jsd_v
 
-def g30(l) : 
-    return (l > 0.34).sum() * 100 / len(l)
-
 #############################################################################################
 
 def pdump(model, values, filename) :
-    pickle.dump(values, open(model.dirname + '/' + filename + '_pdump.pkl', 'wb'))
+    pickle.dump(values, open(os.path.join(model.dirname, filename + '_pdump.pkl'), 'wb'))
 
 def pload(model, filename) :
-    file = model.dirname + '/' + filename + '_pdump.pkl'
+    file = os.path.join(model.dirname, filename + '_pdump.pkl')
     if not os.path.isfile(file) :
         raise FileNotFoundError(file + " doesn't exist")
 
     return pickle.load(open(file, 'rb'))
 
+def is_pdumped(model, filename) :
+    file = os.path.join(model.dirname, filename + '_pdump.pkl')
+    return os.path.isfile(file)
+
 import time
+
+def get_all_models(dirname) :
+    dirs = [d for d in os.listdir(dirname) if 'evaluate.json' in os.listdir(os.path.join(dirname, d))]
+    if len(dirs) == 0 :
+        return None
+    return [os.path.join(dirname, d) for d in dirs]
 
 def get_latest_model(dirname) :
     dirs = [d for d in os.listdir(dirname) if 'evaluate.json' in os.listdir(os.path.join(dirname, d))]

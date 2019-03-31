@@ -1,9 +1,6 @@
 import numpy as np
-
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
-
 from math import ceil
-
 from tqdm import tqdm_notebook
 
 SOS = '<SOS>'
@@ -133,3 +130,48 @@ class Vectorizer:
                 freq[w] += 1
         freq = freq / np.sum(freq)
         self.freq = freq
+
+from nltk.corpus import stopwords
+
+from sklearn.preprocessing import normalize
+from scipy.sparse import csr_matrix
+from collections import Counter
+
+class BoWder :
+    def __init__(self, vocab=None, stop_words=False) :
+        self.vocab = vocab 
+        self.words_to_remove = set([SOS, EOS, PAD, UNK])
+        if stop_words :
+            self.words_to_remove = (set(stopwords.words('english')) & set(self.vocab.word2idx.keys())) | self.words_to_remove
+
+        self.idxs_to_remove = set([self.vocab.word2idx[x] for x in list(self.words_to_remove)])
+        self.words_to_keep = list(set(self.vocab.word2idx.keys()) - self.words_to_remove)
+
+        self.map_vocab_to_bow = {self.vocab.word2idx[k]:i for i, k in enumerate(self.words_to_keep)}
+        self.map_bow_to_vocab = {v:k for k, v in self.map_vocab_to_bow.items()}
+
+    def generate_bow(self, X) :
+        bow = np.zeros((len(X), len(self.words_to_keep)))
+        for i, x in enumerate(tqdm_notebook(X)) :
+            x = set(x) - self.idxs_to_remove
+            counts = Counter(x)
+            for w, c in counts.items() :
+                bow[i, self.map_vocab_to_bow[w]] += c
+
+        bow = csr_matrix(bow)
+        return bow
+
+    def fit_tfidf(self, X) :
+        bow = self.generate_bow(X)
+        self.tfidftransform = TfidfTransformer(norm='l2')
+        self.tfidftransform.fit(bow)
+
+    def get_tfidf(self, X) :
+        bow = self.generate_bow(X)
+        return self.tfidftransform.transform(bow)
+    
+    def get_bow(self, X) :
+        bow = self.generate_bow(X)
+        bow = normalize(bow, norm='l2', copy=False)
+            
+        return bow

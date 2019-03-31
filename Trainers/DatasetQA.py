@@ -1,4 +1,7 @@
-from common import *
+from Transparency.common_code.common import *
+import sys
+sys.path.append('preprocess/')
+import vectorizer
 
 class DataHolder() :
     def __init__(self, **kwargs) :
@@ -16,6 +19,14 @@ class DataHolder() :
             'mean_length' : np.mean(lens),
             'std_length' : np.std(lens)
         }
+    
+    def mock(self, n=200) :
+        data_kwargs = { key: getattr(self, key)[:n] for key in self.attributes}
+        return DataHolder(**data_kwargs)
+
+    def filter(self, idxs) :
+        data_kwargs = { key: [getattr(self, key)[i] for i in idxs] for key in self.attributes}
+        return DataHolder(**data_kwargs)
 
 def getFromDict(dataDict, maplist):
     first, rest = maplist[0], maplist[1:]
@@ -43,6 +54,12 @@ class Dataset() :
         self.train_data = get_data_from_vec(self.vec, ['train'] + filters)
         self.test_data = get_data_from_vec(self.vec, ['test'] + filters, sort=True)
         self.by_class = False
+        
+        self.save_on_metric = 'accuracy'
+        self.output_size = self.vec.entity_size
+        self.trainer_type = 'qa'
+
+        self.bsize = 100
 
     def display_stats(self) :
         stats = {}
@@ -67,28 +84,39 @@ class Dataset() :
         json.dump(stats, open('graph_outputs/' + outdir + '/' + self.name + '.txt', 'w'))
         print(stats)
 
-def get_SNLI() :
-    SNLI_dataset = Dataset(name='snli', path='preprocess/SNLI/vec_snli.p')
+def add_data_dir(args, path) :
+    if args is not None and args.data_dir is not None :
+        return os.path.join(args.data_dir, path)
+    else :
+        return path
+
+def get_SNLI(args=None) :
+    SNLI_dataset = Dataset(name='snli', path=add_data_dir(args, 'preprocess/SNLI/vec_snli.p'))
     SNLI_dataset.by_class = True
+    SNLI_dataset.bsize = 128
     return SNLI_dataset
 
-def get_CNN() :
-    CNN_dataset = Dataset(name='cnn', path='preprocess/CNN/vec_cnn.p')
+def get_CNN(args=None) :
+    CNN_dataset = Dataset(name='cnn', path=add_data_dir(args, 'preprocess/CNN/vec_cnn.p'))
+    CNN_dataset.bsize = 30
     return CNN_dataset
 
-def get_Babi_1() :
-    Babi_1_dataset = Dataset(name='babi_1', path='preprocess/Babi/babi.p', filters=['qa1_single-supporting-fact_'])
+def get_Babi_1(args=None) :
+    Babi_1_dataset = Dataset(name='babi_1', path=add_data_dir(args, 'preprocess/Babi/babi.p'), filters=['qa1_single-supporting-fact_'])
     Babi_1_dataset.vec.word_dim = 50
+    Babi_1_dataset.bsize = 100
     return Babi_1_dataset
 
-def get_Babi_2() :
-    Babi_2_dataset = Dataset(name='babi_2', path='preprocess/Babi/babi.p', filters=['qa2_two-supporting-facts_'])
+def get_Babi_2(args=None) :
+    Babi_2_dataset = Dataset(name='babi_2', path=add_data_dir(args, 'preprocess/Babi/babi.p'), filters=['qa2_two-supporting-facts_'])
     Babi_2_dataset.vec.word_dim = 50
+    Babi_2_dataset.bsize = 100
     return Babi_2_dataset
 
-def get_Babi_3() :
-    Babi_3_dataset = Dataset(name='babi_3', path='preprocess/Babi/babi.p', filters=['qa3_three-supporting-facts_'])
+def get_Babi_3(args=None) :
+    Babi_3_dataset = Dataset(name='babi_3', path=add_data_dir(args, 'preprocess/Babi/babi.p'), filters=['qa3_three-supporting-facts_'])
     Babi_3_dataset.vec.word_dim = 50
+    Babi_3_dataset.bsize = 100
     return Babi_3_dataset
 
 datasets = {

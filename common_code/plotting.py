@@ -1,4 +1,4 @@
-from common import *
+from Transparency.common_code.common import *
 
 import matplotlib as mpl
 import matplotlib.gridspec as gridspec
@@ -41,19 +41,19 @@ def set_square_aspect(axes) :
 
 def save_axis_in_file(fig, ax, dirname, filename):
     ax.set_title("")
-    if 'sst' not in dirname :
+    if 'sst' not in dirname and 'readmission' not in dirname:
         ax.set_xlabel(" ")
         ax.set_ylabel(" ")
         
     renderer = tight_layout.get_renderer(fig)
     inset_tight_bbox = ax.get_tightbbox(renderer)
     extent = inset_tight_bbox.transformed(fig.dpi_scale_trans.inverted())
-    plt.savefig(dirname + '/' + filename + '.pdf', bbox_inches=extent)
+    plt.savefig(os.path.join(dirname, filename + '.pdf'), bbox_inches=extent)
 
 def save_table_in_file(table, dirname, filename) :
-    table.to_csv(dirname + '/' + filename + '.csv', index=True)
+    table.to_csv(os.path.join(dirname, filename + '.csv'), index=True)
 
-def annotate(ax, xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, legend='upper left', left=False) :
+def annotate(ax, xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, legend='upper left') :
     if xlabel is not None : ax.set_xlabel(xlabel, fontsize=20)
     if ylabel is not None : ax.set_ylabel(ylabel, fontsize=20)
     ax.tick_params(labelsize=20)
@@ -61,23 +61,25 @@ def annotate(ax, xlabel=None, ylabel=None, title=None, xlim=None, ylim=None, leg
     if xlim is not None : ax.set_xlim(*xlim)
     if ylim is not None : ax.set_ylim(*ylim)
 
-    ax.legend(loc=legend, frameon=False)
     set_square_aspect(ax)
     sns.despine(ax=ax)
     if legend is None and ax.get_legend() is not None : ax.get_legend().remove()
 
 ###########################################################################################################################
 
-def plot_SP_histogram_by_class(ax, spcorr, yhat, bins=30, by_class=False) :
+def plot_SP_histogram_by_class(ax, spcorr, yhat, bins=30) :
     sprho = np.array([x[0] for x in spcorr])
     sppval = np.array([x[1] for x in spcorr])
 
     measures = {"pval_sig" : {}, "mean" : {}, "std" : {}}
 
-    yhat = np.round(yhat)
-    unique_y = np.sort(np.unique(yhat))
+    unique_y = None
+    if len(yhat.shape) == 1 or yhat.shape[1] == 1:
+        yhat = yhat.flatten()
+        yhat = np.round(yhat)
+        unique_y = np.sort(np.unique(yhat))
 
-    if by_class or len(unique_y) < 4:
+    if unique_y is not None and len(unique_y) < 4:
         for y in unique_y :
             rho = sprho[yhat == y]
             pval = sppval[yhat == y]
@@ -93,22 +95,23 @@ def plot_SP_histogram_by_class(ax, spcorr, yhat, bins=30, by_class=False) :
 
     return pd.DataFrame(measures)
 
-def plot_histogram_by_class(ax, values, yhat, bins=40, hist_lims=None, pval=None, pvallabel=None, by_class=False) :
+def plot_histogram_by_class(ax, values, yhat, bins=40, hist_lims=None) :
     values = np.array(values)
-    yhat = np.round(yhat)
-    unique_y = np.sort(np.unique(yhat))
 
-    if by_class or len(unique_y) < 4:
+    unique_y = None
+    if len(yhat.shape) == 1 or yhat.shape[1] == 1:
+        yhat = yhat.flatten()
+        yhat = np.round(yhat)
+        unique_y = np.sort(np.unique(yhat))
+
+    if unique_y is not None and len(unique_y) < 4:
         for y in unique_y :
             rho = values[yhat == y]
             ax.hist(rho, bins=bins, range=hist_lims, alpha=0.6, linewidth=0.5, edgecolor='k', weights=np.ones(len(rho))/len(rho))
     else :
         ax.hist(values, bins=bins, range=hist_lims, alpha=0.6, linewidth=0.5, edgecolor='k', weights=np.ones(len(values))/len(values))
 
-def plot_violin_by_class(ax, X_vals, Y_vals, yhat, xlim, bins=4, by_class=False) :
-    yhat = np.round(yhat)
-    unique_y = np.sort(np.unique(yhat))
-
+def plot_violin_by_class(ax, X_vals, Y_vals, yhat, xlim, bins=4) :
     bins = xlim[0] + np.arange(bins+1) / bins * (xlim[1]+1e-4 - xlim[0])
     xbins = np.digitize(X_vals, bins[1:])
     order = ["[" + "{:.2f}".format(bins[p]) + ',\n' + "{:.2f}".format(bins[p+1]) + ")" for p in np.arange(len(bins)-1)]
@@ -117,9 +120,33 @@ def plot_violin_by_class(ax, X_vals, Y_vals, yhat, xlim, bins=4, by_class=False)
     for p in xbins :
         xnames.append("[" + "{:.2f}".format(bins[p]) + ',\n' + "{:.2f}".format(bins[p+1]) + ")")
 
-    if by_class or len(unique_y) < 4:
-        sns.violinplot(y=xnames, x=Y_vals, hue=yhat, ax=ax, linewidth=1.0, order=order, cut=0.02, inner='quartiles', dodge=True)
-    else :
-        sns.violinplot(y=xnames, x=Y_vals, hue=np.zeros((len(yhat, ))), ax=ax, linewidth=1.0, order=order, cut=0.02, inner='quartiles', dodge=True)
+    classes = np.zeros((len(yhat,)))
+    if len(yhat.shape) == 1 or yhat.shape[1] == 1:
+        yhat = yhat.flatten()
+        yhat = np.round(yhat)
+        unique_y = np.sort(np.unique(yhat))
+        if len(unique_y) < 4 :
+            classes = yhat
+
+    df = pd.DataFrame({'bin' : xnames, 'val' : Y_vals, 'class' : classes})
+    sns.violinplot(data=df, y="bin", x="val", hue="class", ax=ax, linewidth=1.0, order=order, cut=0.02, inner='quartiles', dodge=True)
 
     ax.get_legend().remove()
+
+def plot_scatter_by_class(ax, X_vals, Y_vals, yhat) :
+    classes = np.zeros((len(yhat,)))
+    if len(yhat.shape) == 1 or yhat.shape[1] == 1:
+        yhat = yhat.flatten()
+        yhat = np.round(yhat)
+        unique_y = np.sort(np.unique(yhat))
+        if len(unique_y) < 4 :
+            classes = yhat
+
+    unique_y = np.sort(np.unique(classes))
+
+    df = pd.DataFrame({'bin' : X_vals, 'val' : Y_vals, 'class' : classes})
+    if len(unique_y) <= 1 :
+        sns.scatterplot(x='bin', y='val', data=df, ax=ax, alpha=1.0, s=10, linewidth=0)
+    else :
+        sns.scatterplot(x='bin', y='val', hue='class', style='class', data=df, ax=ax, alpha=0.7, s=10, linewidth=0)
+        ax.get_legend().remove()

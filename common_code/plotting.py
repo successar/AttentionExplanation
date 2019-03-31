@@ -9,7 +9,7 @@ from matplotlib import tight_layout
 
 mpl.style.use('seaborn-poster')
 sns.set_palette(sns.color_palette(['#7570b3', '#d95f02', '#1b9e77']))
-sns.palplot(sns.color_palette(['#7570b3', '#d95f02', '#1b9e77']))
+# sns.palplot(sns.color_palette(['#7570b3', '#d95f02', '#1b9e77']))
 
 font = {'size'   : 17}
 mpl.rc('font', **font)

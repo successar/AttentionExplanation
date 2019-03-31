@@ -12,8 +12,6 @@ from Transparency.Trainers.DatasetQA import *
 from Transparency.ExperimentsQA import *
 
 dataset = datasets[args.dataset](args)
-dataset.train_data = dataset.train_data.mock()
-dataset.test_data = dataset.test_data.mock()
 
 if args.output_dir is not None :
     dataset.output_dir = args.output_dir

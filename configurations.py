@@ -82,6 +82,7 @@ def make_attention_dot(func) :
     def new_func(dataset) :
         config = func(dataset)
         config['model']['decoder']['attention']['type'] = 'dot'
+        config['training']['exp_dirname'] = config['training']['exp_dirname'].replace('tanh', 'dot')
         return config
 
     return new_func

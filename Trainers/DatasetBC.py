@@ -1,6 +1,4 @@
 from Transparency.common_code.common import *
-import sys
-sys.path.append('preprocess/')
 import vectorizer
 
 def sortbylength(X, y) :

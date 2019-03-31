@@ -5,12 +5,33 @@ from Transparency.Trainers.TrainerBC import Trainer, Evaluator
 from Transparency.model.LR import LR
             
 def train_dataset(dataset, config='lstm') :
-    config = configurations[config](dataset)
-    trainer = Trainer(dataset, config=config, _type=dataset.trainer_type)
-    trainer.train(dataset.train_data, dataset.test_data, n_iters=8, save_on_metric=dataset.save_on_metric)
-    evaluator = Evaluator(dataset, trainer.model.dirname, _type=dataset.trainer_type)
-    _ = evaluator.evaluate(dataset.test_data, save_results=True)
-    return trainer, evaluator
+    try :
+        config = configurations[config](dataset)
+        trainer = Trainer(dataset, config=config, _type=dataset.trainer_type)
+        trainer.train(dataset.train_data, dataset.test_data, n_iters=8, save_on_metric=dataset.save_on_metric)
+        evaluator = Evaluator(dataset, trainer.model.dirname, _type=dataset.trainer_type)
+        _ = evaluator.evaluate(dataset.test_data, save_results=True)
+        return trainer, evaluator
+    except :
+        return
+
+def train_dataset_on_encoders_tanh(dataset) :
+    train_dataset(dataset, 'cnn')
+    train_dataset(dataset, 'average')
+    train_dataset(dataset, 'lstm')
+
+    run_experiments_on_latest_model(dataset, 'cnn')
+    run_experiments_on_latest_model(dataset, 'average')
+    run_experiments_on_latest_model(dataset, 'lstm')
+
+def train_dataset_on_encoders_dot(dataset) :
+    train_dataset(dataset, 'cnn_dot')
+    train_dataset(dataset, 'average_dot')
+    train_dataset(dataset, 'lstm_dot')
+
+    run_experiments_on_latest_model(dataset, 'cnn_dot')
+    run_experiments_on_latest_model(dataset, 'average_dot')
+    run_experiments_on_latest_model(dataset, 'lstm_dot')
 
 def train_lr_on_dataset(dataset) :
     config = {
@@ -39,11 +60,15 @@ def run_evaluator_on_latest_model(dataset, config='lstm') :
     return evaluator
 
 def run_experiments_on_latest_model(dataset, config='lstm', force_run=True) :
-    evaluator = run_evaluator_on_latest_model(dataset, config)
-    test_data = dataset.test_data
-    evaluator.gradient_experiment(test_data, force_run=force_run)
-    evaluator.permutation_experiment(test_data, force_run=force_run)
-    evaluator.adversarial_experiment(test_data, force_run=force_run)
+    try :
+        evaluator = run_evaluator_on_latest_model(dataset, config)
+        test_data = dataset.test_data
+        evaluator.gradient_experiment(test_data, force_run=force_run)
+        evaluator.permutation_experiment(test_data, force_run=force_run)
+        evaluator.adversarial_experiment(test_data, force_run=force_run)
+        evaluator.remove_and_run_experiment(test_data, force_run=force_run)
+    except :
+        return
     
 def run_experiments_on_all_valid_models(dataset, config='lstm') :
     config = configurations[config](dataset)

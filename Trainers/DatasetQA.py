@@ -46,6 +46,8 @@ def get_data_from_vec(vec, _types, sort=False) :
 class Dataset() :
     def __init__(self, name, path=None, vec=None, filters=[], args=None) :
         self.name = name
+        if args is not None and path is not None and hasattr(args, 'data_dir') :
+            path = os.path.join(args.data_dir, path)
         self.vec = pickle.load(open(path, 'rb')) if vec is None else vec
         self.vec.entity_size = len(self.vec.entity2idx)
 
@@ -59,7 +61,7 @@ class Dataset() :
 
         self.bsize = 100
         
-        if hasattr(args, 'output_dir') :
+        if args is not None and hasattr(args, 'output_dir') :
             self.basepath = args.output_dir
 
     def display_stats(self) :
@@ -85,37 +87,31 @@ class Dataset() :
         json.dump(stats, open('graph_outputs/' + outdir + '/' + self.name + '.txt', 'w'))
         print(stats)
 
-def add_data_dir(args, path) :
-    if args is not None and args.data_dir is not None :
-        return os.path.join(args.data_dir, path)
-    else :
-        return path
-
 def get_SNLI(args=None) :
-    SNLI_dataset = Dataset(name='snli', path=add_data_dir(args, 'preprocess/SNLI/vec_snli.p'), args=args)
+    SNLI_dataset = Dataset(name='snli', path='preprocess/SNLI/vec_snli.p', args=args)
     SNLI_dataset.by_class = True
     SNLI_dataset.bsize = 128
     return SNLI_dataset
 
 def get_CNN(args=None) :
-    CNN_dataset = Dataset(name='cnn', path=add_data_dir(args, 'preprocess/CNN/vec_cnn.p'), args=args)
+    CNN_dataset = Dataset(name='cnn', path='preprocess/CNN/vec_cnn.p', args=args)
     CNN_dataset.bsize = 30
     return CNN_dataset
 
 def get_Babi_1(args=None) :
-    Babi_1_dataset = Dataset(name='babi_1', path=add_data_dir(args, 'preprocess/Babi/babi.p'), filters=['qa1_single-supporting-fact_'], args=args)
+    Babi_1_dataset = Dataset(name='babi_1', path='preprocess/Babi/babi.p', filters=['qa1_single-supporting-fact_'], args=args)
     Babi_1_dataset.vec.word_dim = 50
     Babi_1_dataset.bsize = 100
     return Babi_1_dataset
 
 def get_Babi_2(args=None) :
-    Babi_2_dataset = Dataset(name='babi_2', path=add_data_dir(args, 'preprocess/Babi/babi.p'), filters=['qa2_two-supporting-facts_'], args=args)
+    Babi_2_dataset = Dataset(name='babi_2', path='preprocess/Babi/babi.p', filters=['qa2_two-supporting-facts_'], args=args)
     Babi_2_dataset.vec.word_dim = 50
     Babi_2_dataset.bsize = 100
     return Babi_2_dataset
 
 def get_Babi_3(args=None) :
-    Babi_3_dataset = Dataset(name='babi_3', path=add_data_dir(args, 'preprocess/Babi/babi.p'), filters=['qa3_three-supporting-facts_'], args=args)
+    Babi_3_dataset = Dataset(name='babi_3', path='preprocess/Babi/babi.p', filters=['qa3_three-supporting-facts_'], args=args)
     Babi_3_dataset.vec.word_dim = 50
     Babi_3_dataset.bsize = 100
     return Babi_3_dataset

@@ -64,7 +64,7 @@ def plot_permutations(test_data, permutations, dirname='') :
 
 ##########################################################################################################
 
-def plot_multi_adversarial(test_data, adversarial_outputs, epsilon=0.01, dirname='') :
+def plot_multi_adversarial(test_data, adversarial_outputs, epsilon=0.05, dirname='') :
     X, attn, yhat = test_data.P, test_data.attn_hat, test_data.yt_hat
     fig, ax = init_gridspec(3, 3, 2)
 

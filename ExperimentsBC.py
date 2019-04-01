@@ -32,6 +32,15 @@ def train_dataset_on_encoders_dot(dataset) :
     run_experiments_on_latest_model(dataset, 'cnn_dot')
     run_experiments_on_latest_model(dataset, 'average_dot')
     run_experiments_on_latest_model(dataset, 'lstm_dot')
+    
+def generate_graphs_on_encoders(dataset) :
+    generate_graphs_on_latest_model(dataset, 'cnn')
+    generate_graphs_on_latest_model(dataset, 'average')
+    generate_graphs_on_latest_model(dataset, 'lstm')
+
+    generate_graphs_on_latest_model(dataset, 'cnn_dot')
+    generate_graphs_on_latest_model(dataset, 'average_dot')
+    generate_graphs_on_latest_model(dataset, 'lstm_dot')
 
 def train_lr_on_dataset(dataset) :
     config = {

@@ -95,25 +95,28 @@ def get_SNLI(args=None) :
 
 def get_CNN(args=None) :
     CNN_dataset = Dataset(name='cnn', path='preprocess/CNN/vec_cnn.p', args=args)
-    CNN_dataset.bsize = 30
+    CNN_dataset.bsize = 90
     return CNN_dataset
 
 def get_Babi_1(args=None) :
     Babi_1_dataset = Dataset(name='babi_1', path='preprocess/Babi/babi.p', filters=['qa1_single-supporting-fact_'], args=args)
     Babi_1_dataset.vec.word_dim = 50
-    Babi_1_dataset.bsize = 100
+    Babi_1_dataset.bsize = 50
+    Babi_1_dataset.n_iters = 100
     return Babi_1_dataset
 
 def get_Babi_2(args=None) :
     Babi_2_dataset = Dataset(name='babi_2', path='preprocess/Babi/babi.p', filters=['qa2_two-supporting-facts_'], args=args)
     Babi_2_dataset.vec.word_dim = 50
-    Babi_2_dataset.bsize = 100
+    Babi_2_dataset.bsize = 50
+    Babi_2_dataset.n_iters = 100
     return Babi_2_dataset
 
 def get_Babi_3(args=None) :
     Babi_3_dataset = Dataset(name='babi_3', path='preprocess/Babi/babi.p', filters=['qa3_three-supporting-facts_'], args=args)
     Babi_3_dataset.vec.word_dim = 50
-    Babi_3_dataset.bsize = 100
+    Babi_3_dataset.bsize = 50
+    Babi_3_dataset.n_iters = 100
     return Babi_3_dataset
 
 datasets = {

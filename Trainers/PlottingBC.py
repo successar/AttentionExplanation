@@ -142,12 +142,12 @@ def print_adversarial_example(sentence, attn, attn_new, latex=False) :
 
 def plot_y_diff(test_data, ynew_list, save_name=None, dirname='') :
     X, yhat, attn = test_data.X, test_data.yt_hat, test_data.attn_hat
-    y_diff = np.abs(np.array(ynew_list) - yhat[:, None, :]).mean(-1)
     spcorrs = []
 
     for i in range(len(attn)) :
         L = len(X[i])
-        spcorrs.append(kendalltau(attn[i][1:L-1], y_diff[i][1:L-1]))
+        ydiff = np.abs(ynew_list[i] - yhat[i]).mean(-1)
+        spcorrs.append(kendalltau(attn[i][1:L-1], ydiff[1:L-1]))
 
     fig, ax = init_gridspec(3, 3, 1)
     pval_table = plot_SP_histogram_by_class(ax[0], spcorrs, yhat)

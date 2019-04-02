@@ -1,119 +1,151 @@
 <html lang='en'>
+
 <head>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-<script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+    <style>
+        .captionpdf {
+            font-size: 2em;
+            text-align: center;
+        }
+    </style>
 </head>
 
 <body>
-<h1>Graphs</h1>
-<div class='container'>
-    <div class='row'>
-        <div class='col'>
-            <div class="dropdown">
-                <button class="btn btn-secondary dropdown-toggle" type="button" id="datasetdropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Choose Dataset
-                </button>
-                <div class="dropdown-menu" aria-labelledby="datasetdropdown">
-                    <a class="dropdown-item" href="#">SST</a>
-                    <a class="dropdown-item" href="#">IMDB</a>
-                    <a class="dropdown-item" href="#">20 News Group</a>
-                </div>
-            </div>
-        </div>
-        <div class='col'>
-            <button class="btn btn-secondary dropdown-toggle" type="button" id="experimentdropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                Choose Dataset
-            </button>
-            <div class="dropdown-menu" aria-labelledby="experimentdropdown">
-                <a class="dropdown-item" href="#">Gradients</a>
-                <a class="dropdown-item" href="#">Permutation Scatter</a>
-                <a class="dropdown-item" href="#">Adversarial Historgram</a>
-            </div>
-        </div>
-    </div>
-    <div class='row'>
-        <div class="col">
-            <canvas id="pdfaveragetanh"></canvas>
-        </div>
-        <div class="col">
-            <canvas id="pdfcnntanh"></canvas>
-        </div>
-        <div class="col">
-            <canvas id="pdflstmtanh"></canvas>
-        </div>
-    </div>
-    <div class='row'>
-        <div class="col">
-            <canvas id="pdfaveragedot"></canvas>
-        </div>
-        <div class="col">
-            <canvas id="pdfcnndot"></canvas>
-        </div>
-        <div class="col">
-            <canvas id="pdflstmdot"></canvas>
-        </div>
-    </div>
-</div>
-<script type='text/javascript'>
-    var attentions = ['tanh', 'dot'];
-    var encoders = ['average', 'cnn', 'lstm'];
 
-    for(attn in attentions) {
-        for(enc in encoders) {
-            var attention = attentions[attn];
-            var encoder = encoders[enc];
-            if (encoder == 'cnn') {
-                encoder = 'cnn(1,3,5,7)';
-            }
-            // If absolute URL from the remote server is provided, configure the CORS
-            // header on that server.
-            var url = '../graph_outputs/GradientXHist/20News_sports+' + encoder + '+' + attention + '.pdf';
-            
-            // Loaded via <script> tag, create shortcut to access PDF.js exports.
-            var pdfjsLib = window['pdfjs-dist/build/pdf'];
-            
-            // The workerSrc property shall be specified.
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
-            
-            // Asynchronous download of PDF
-            (async (encname, attnname) => {
-                var loadingTask = pdfjsLib.getDocument(url);
-                var pdf = await loadingTask.promise;
-                console.log('PDF loaded');
-                
-                // Fetch the first page
-                var pageNumber = 1;
-                pdf.getPage(pageNumber).then(function(page) {
-                console.log('Page loaded');
-                
-                var scale = 1.0;
-                var viewport = page.getViewport({scale: scale});
-            
-                // Prepare canvas using PDF page dimensions
-                var canvasId = 'pdf'+encname+attnname;
-                console.log(canvasId);
-                var canvas = document.getElementById(canvasId);
-                var context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-            
-                // Render PDF page into canvas context
-                var renderContext = {
-                    canvasContext: context,
-                    viewport: viewport
-                };
-                var renderTask = page.render(renderContext);
-                    renderTask.promise.then(function () {
-                        console.log('Page rendered');
-                    });
-                });
-            })(encoders[enc], attentions[attn]);
-            
-        }
-    }
-</script>
+    <div class='container'>
+        <div class='row'>
+            <h1 style="text-align:center;">Graphs</h1>
+        </div>
+        <div class='row'>
+            <form class='form-inline'>
+                <div class="form-group mb-2">
+                    <select name="Dataset" id="dataset" class="form-control">
+                        <option value="sst">SST</option>
+                        <option value="imdb">IMDB</option>
+                        <option value="20News_sports">20 NewsGroup</option>
+                        <option value="tweet">ADR</option>
+                        <option value="agnews">AG News</option>
+                        <option value="diab">Diabetes</option>
+                        <option value="anemia">Anemia</option>
+                        <option value="snli">SNLI</option>
+                        <option value="cnn">CNN</option>
+                        <option value="babi_1">Babi 1</option>
+                        <option value="babi_2">Babi 2</option>
+                        <option value="babi_3">Babi 3</option>
+                    </select>
+                </div>
+                <div class="form-group mx-sm-3 mb-2">
+                    <select name="Experiment" id="experiment" class="form-control">
+                        <option value="GradientXHist">Gradients</option>
+                        <option value="eMaxJDS_Hist">Adversarial Histogram</option>
+                        <option value="eMaxJDS_Scatter">Adversarial Scatterplots</option>
+                        <option value="Permutation_MAvDY">Permutation Scatter</option>
+                        <option value="pyxc-pyc_SP">Leave One Out</option>
+                    </select>
+                    
+                </div>
+                <button type='button' class="btn btn-primary mb-2" id="submitform">Submit</button>
+            </form>
+        </div>
+        <div class='row'>
+            <div class="col" width="100%" height="100%">
+                <figure class="figure">
+                    <!-- <canvas id="pdfaveragetanh"></canvas> -->
+                    <object id="svgaveragetanh" data="" type="image/svg+xml" width=300 height=300></object>
+                    <figcaption class='captionpdf'>Average + Tanh Attention</figcaption>
+                </figure>
+            </div>
+            <div class="col" width="100%" height="100%">
+                <figure class="figure">
+                    <!-- <canvas id="pdfcnntanh"></canvas> -->
+                    <object id="svgcnntanh" data="" type="image/svg+xml" width=300 height=300></object>
+                    <figcaption class='captionpdf'>CNN + Tanh Attention</figcaption>
+                </figure>
+            </div>
+            <div class="col" width="100%" height="100%">
+                <figure class="figure">
+                    <!-- <canvas id="pdflstmtanh"></canvas> -->
+                    <object id="svglstmtanh" data="" type="image/svg+xml" width=300 height=300></object>
+                    <figcaption class='captionpdf'>LSTM + Tanh Attention</figcaption>
+                </figure>
+            </div>
+        </div>
+        <div class='row'>
+            <div class="col" width="100%" height="100%">
+                <figure class="figure">
+                    <!-- <canvas id="pdfaveragedot"></canvas> -->
+                    <object id="svgaveragedot" data="" type="image/svg+xml" width=300 height=300></object>
+                    <figcaption class='captionpdf'>Average + Dot Attention</figcaption>
+                </figure>
+            </div>
+            <div class="col" width="100%" height="100%">
+                <figure class="figure">
+                    <!-- <canvas id="pdfcnndot"></canvas> -->
+                    <object id="svgcnndot" data="" type="image/svg+xml" width=300 height=300></object>
+                    <figcaption class='captionpdf'>CNN + Dot Attention</figcaption>
+                </figure>
+            </div>
+            <div class="col" width="100%" height="100%">
+                <figure class="figure">
+                    <!-- <canvas id="pdflstmdot"></canvas> -->
+                    <object id="svglstmdot" data="" type="image/svg+xml" width=300 height=300></object>
+                    <figcaption class='captionpdf'>LSTM + Dot Attention</figcaption>
+                </figure>
+            </div>
+        </div>
+    </div>
+    <script type='text/javascript'>
+        $(document).ready(function() {
+            $('#submitform').click(function(){
+                console.log('clicked');
+                var dataset = $('#dataset').val();
+                var experiment = $('#experiment').val();
+                console.log(dataset);
+                console.log(experiment);
+                var attentions = ['tanh', 'dot'];
+                var encoders = ['average', 'cnn', 'lstm'];
+
+                for (attn in attentions) {
+                    for (enc in encoders) {
+                        var attention = attentions[attn];
+                        var encoder = encoders[enc];
+                        if (encoder == 'cnn') {
+                            encoder = 'cnn(1,3,5,7)';
+                        }
+
+                        // base_image = new Image();
+                        // base_image.encname = encoders[enc];
+                        // base_image.attnname = attentions[attn];
+                        var url = '../graph_outputs/' + experiment + '/' + dataset + '+' + encoder + '+' + attention + '.svg';
+                        $('#svg' + encoders[enc] + attentions[attn]).attr('data', url);
+                        // base_image.src = '../graph_outputs/' + experiment + '/' + dataset + '+' + encoder + '+' + attention + '.svg';
+
+                        // base_image.onload = function () {
+                        //     var canvasId = 'pdf' + this.encname + this.attnname;
+                        //     console.log(canvasId);
+                        //     console.log(this.src);
+                        //     var canvas = document.getElementById(canvasId);
+                        //     canvas.height = 300; //this.height;
+                        //     canvas.width = 300; //this.width;
+                        //     var context = canvas.getContext('2d');
+                        //     context.drawImage(this, 0, 0, 300, 300);
+                        // }
+
+                    }
+                }
+            });
+        });
+    </script>
 </body>
+
 </html>

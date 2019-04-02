@@ -131,13 +131,13 @@ def get_latest_model(dirname) :
 def push_graphs_to_main_directory(model_dirname, name) :
     dirname = model_dirname
     files = os.listdir(dirname)
-    files = [f for f in files if f.endswith('pdf')]
+    files = [f for f in files if f.endswith('svg')]
     
     for f in files :
         outdir = f[:-4]
         output_name = os.path.join('graph_outputs', outdir)
         os.makedirs(output_name, exist_ok=True)
-        shutil.copyfile(os.path.join(model_dirname, f), os.path.join(output_name, name + '.pdf'))
+        shutil.copyfile(os.path.join(model_dirname, f), os.path.join(output_name, name + '.svg'))
 
     files = os.listdir(dirname)
     files = [f for f in files if f.endswith('csv')]

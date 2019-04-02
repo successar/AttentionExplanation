@@ -61,8 +61,10 @@
     var attentions = ['tanh', 'dot'];
     var encoders = ['average', 'cnn', 'lstm'];
 
-    for(attention in attentions) {
-        for(encoder in encoders) {
+    for(attn in attentions) {
+        for(enc in encoders) {
+            var attention = attentions[attn];
+            var encoder = encoders[enc];
             // If absolute URL from the remote server is provided, configure the CORS
             // header on that server.
             var url = '../graph_outputs/GradientXHist/20News_sports+' + encoder + '+' + attention + '.pdf';

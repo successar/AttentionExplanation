@@ -92,7 +92,9 @@
                 var viewport = page.getViewport({scale: scale});
             
                 // Prepare canvas using PDF page dimensions
-                var canvas = document.getElementById('pdf'+encoders[enc]+attentions[attn]);
+                var canvasId = 'pdf'+encoders[enc]+attentions[attn];
+                console.log(canvasId);
+                var canvas = document.getElementById(canvasId);
                 var context = canvas.getContext('2d');
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;

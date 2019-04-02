@@ -65,6 +65,9 @@
         for(enc in encoders) {
             var attention = attentions[attn];
             var encoder = encoders[enc];
+            if (encoder == 'cnn') {
+                encoder = 'cnn(1,3,5,7)';
+            }
             // If absolute URL from the remote server is provided, configure the CORS
             // header on that server.
             var url = '../graph_outputs/GradientXHist/20News_sports+' + encoder + '+' + attention + '.pdf';
@@ -89,7 +92,7 @@
                 var viewport = page.getViewport({scale: scale});
             
                 // Prepare canvas using PDF page dimensions
-                var canvas = document.getElementById('pdf'+encoder+attention);
+                var canvas = document.getElementById('pdf'+encoders[enc]+attentions[attn]);
                 var context = canvas.getContext('2d');
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;

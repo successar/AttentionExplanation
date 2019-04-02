@@ -79,8 +79,9 @@
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
             
             // Asynchronous download of PDF
-            var loadingTask = pdfjsLib.getDocument(url);
-            loadingTask.promise.then(function(pdf) {
+            (async () => {
+                var loadingTask = pdfjsLib.getDocument(url);
+                var pdf = await loadingTask.promise;
                 console.log('PDF loaded');
                 
                 // Fetch the first page
@@ -105,14 +106,12 @@
                     viewport: viewport
                 };
                 var renderTask = page.render(renderContext);
-                renderTask.promise.then(function () {
-                    console.log('Page rendered');
+                    renderTask.promise.then(function () {
+                        console.log('Page rendered');
+                    });
                 });
-                });
-            }, function (reason) {
-                // PDF loading error
-                console.error(reason);
-            });
+            })();
+            
         }
     }
 </script>

@@ -29,6 +29,7 @@
         <div class='row'>
             <form class='form-inline'>
                 <div class="form-group mb-2">
+		    <label for="dataset">Dataset: </label>
                     <select name="Dataset" id="dataset" class="form-control">
                         <option value="sst">SST</option>
                         <option value="imdb">IMDB</option>
@@ -45,12 +46,15 @@
                     </select>
                 </div>
                 <div class="form-group mx-sm-3 mb-2">
+		    <label for="experiment">Experiment: </label>
                     <select name="Experiment" id="experiment" class="form-control">
                         <option value="GradientXHist">Gradients</option>
+                        <option value="pyxc-pyc_SP">Leave One Out</option>
+                        <option disabled="disabled">-------------</option>
+                        <option value="Permutation_MAvDY">Permutation Scatterplots</option>
+                        <option disabled="disabled">-------------</option>
                         <option value="eMaxJDS_Hist">Adversarial Histogram</option>
                         <option value="eMaxJDS_Scatter">Adversarial Scatterplots</option>
-                        <option value="Permutation_MAvDY">Permutation Scatter</option>
-                        <option value="pyxc-pyc_SP">Leave One Out</option>
                     </select>
                     
                 </div>

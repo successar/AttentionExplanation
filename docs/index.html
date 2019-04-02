@@ -79,7 +79,7 @@
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
             
             // Asynchronous download of PDF
-            (async () => {
+            (async (encname, attnname) => {
                 var loadingTask = pdfjsLib.getDocument(url);
                 var pdf = await loadingTask.promise;
                 console.log('PDF loaded');
@@ -93,7 +93,7 @@
                 var viewport = page.getViewport({scale: scale});
             
                 // Prepare canvas using PDF page dimensions
-                var canvasId = 'pdf'+encoders[enc]+attentions[attn];
+                var canvasId = 'pdf'+encname+attnname;
                 console.log(canvasId);
                 var canvas = document.getElementById(canvasId);
                 var context = canvas.getContext('2d');
@@ -110,7 +110,7 @@
                         console.log('Page rendered');
                     });
                 });
-            })();
+            })(encoders[enc], attentions[attn]);
             
         }
     }

@@ -36,55 +36,78 @@
     </div>
     <div class='row'>
         <div class="col">
-            <canvas id="the-canvas"></canvas>
-            <!-- <embed src='../graph_outputs/GradientXHist/20News_sports+average+dot.pdf' width="100%" height="100%"/> -->
+            <canvas id="pdfaveragetanh"></canvas>
+        </div>
+        <div class="col">
+            <canvas id="pdfcnntanh"></canvas>
+        </div>
+        <div class="col">
+            <canvas id="pdflstmtanh"></canvas>
+        </div>
+    </div>
+    <div class='row'>
+        <div class="col">
+            <canvas id="pdfaveragedot"></canvas>
+        </div>
+        <div class="col">
+            <canvas id="pdfcnndot"></canvas>
+        </div>
+        <div class="col">
+            <canvas id="pdflstmdot"></canvas>
         </div>
     </div>
 </div>
 <script type='text/javascript'>
-    // If absolute URL from the remote server is provided, configure the CORS
-    // header on that server.
-    var url = '../graph_outputs/GradientXHist/20News_sports+average+dot.pdf';
-    
-    // Loaded via <script> tag, create shortcut to access PDF.js exports.
-    var pdfjsLib = window['pdfjs-dist/build/pdf'];
-    
-    // The workerSrc property shall be specified.
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
-    
-    // Asynchronous download of PDF
-    var loadingTask = pdfjsLib.getDocument(url);
-    loadingTask.promise.then(function(pdf) {
-        console.log('PDF loaded');
-        
-        // Fetch the first page
-        var pageNumber = 1;
-        pdf.getPage(pageNumber).then(function(page) {
-        console.log('Page loaded');
-        
-        var scale = 1.5;
-        var viewport = page.getViewport({scale: scale});
-    
-        // Prepare canvas using PDF page dimensions
-        var canvas = document.getElementById('the-canvas');
-        var context = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-    
-        // Render PDF page into canvas context
-        var renderContext = {
-            canvasContext: context,
-            viewport: viewport
-        };
-        var renderTask = page.render(renderContext);
-        renderTask.promise.then(function () {
-            console.log('Page rendered');
-        });
-        });
-    }, function (reason) {
-        // PDF loading error
-        console.error(reason);
-    });
+    var attentions = ['tanh', 'dot'];
+    var encoders = ['average', 'cnn', 'lstm'];
+
+    for(attention in attentions) {
+        for(encoder in encoders) {
+            // If absolute URL from the remote server is provided, configure the CORS
+            // header on that server.
+            var url = '../graph_outputs/GradientXHist/20News_sports+' + encoder + '+' + attention + '.pdf';
+            
+            // Loaded via <script> tag, create shortcut to access PDF.js exports.
+            var pdfjsLib = window['pdfjs-dist/build/pdf'];
+            
+            // The workerSrc property shall be specified.
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
+            
+            // Asynchronous download of PDF
+            var loadingTask = pdfjsLib.getDocument(url);
+            loadingTask.promise.then(function(pdf) {
+                console.log('PDF loaded');
+                
+                // Fetch the first page
+                var pageNumber = 1;
+                pdf.getPage(pageNumber).then(function(page) {
+                console.log('Page loaded');
+                
+                var scale = 1.0;
+                var viewport = page.getViewport({scale: scale});
+            
+                // Prepare canvas using PDF page dimensions
+                var canvas = document.getElementById('pdf'+encoder+attention);
+                var context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+            
+                // Render PDF page into canvas context
+                var renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                var renderTask = page.render(renderContext);
+                renderTask.promise.then(function () {
+                    console.log('Page rendered');
+                });
+                });
+            }, function (reason) {
+                // PDF loading error
+                console.error(reason);
+            });
+        }
+    }
 </script>
 </body>
 </html>

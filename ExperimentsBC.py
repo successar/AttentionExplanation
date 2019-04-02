@@ -75,7 +75,7 @@ def run_experiments_on_latest_model(dataset, config='lstm', force_run=True) :
         evaluator.gradient_experiment(test_data, force_run=force_run)
         evaluator.permutation_experiment(test_data, force_run=force_run)
         evaluator.adversarial_experiment(test_data, force_run=force_run)
-        evaluator.remove_and_run_experiment(test_data, force_run=force_run)
+#         evaluator.remove_and_run_experiment(test_data, force_run=force_run)
     except :
         return
     

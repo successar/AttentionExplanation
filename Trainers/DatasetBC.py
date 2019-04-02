@@ -155,32 +155,32 @@ datasets = {
 
 ####################################### EHR Dataloaders ######################################################################
 
-def Readmission_dataset() :
-    dataset = Dataset(name='readmission', path='preprocess/MIMIC_Datasets/Readmission/readmission.p', max_length=20000)
+def Readmission_dataset(args=None) :
+    dataset = Dataset(name='readmission', path='preprocess/MIMIC_Datasets/Readmission/readmission.p', max_length=20000, args=args)
     set_balanced_pos_weight(dataset)
     dataset.test_data = dataset.test_data.mock(n=5000)
     return dataset
 
-def Mortality_dataset() :
-    dataset = Dataset(name='mortality', path='preprocess/MIMIC_Datasets/Mortality/mortality.p', max_length=20000)
+def Mortality_dataset(args=None) :
+    dataset = Dataset(name='mortality', path='preprocess/MIMIC_Datasets/Mortality/mortality.p', max_length=20000, args=args)
     set_balanced_pos_weight(dataset)
     dataset.test_data = dataset.test_data.mock(n=5000)
     return dataset
 
-def KneeSurgery_dataset() :
-    dataset = Dataset(name='KneeSurgery', path='preprocess/MIMIC_Datasets/KneeSurgery/kneesurgery.p', max_length=20000)
+def KneeSurgery_dataset(args=None) :
+    dataset = Dataset(name='KneeSurgery', path='preprocess/MIMIC_Datasets/KneeSurgery/kneesurgery.p', max_length=20000, args=args)
     set_balanced_pos_weight(dataset)
     dataset.test_data = dataset.test_data.mock(n=5000)
     return dataset
 
-def HipSurgery_dataset() :
-    dataset = Dataset(name='HipSurgery', path='preprocess/MIMIC_Datasets/HipSurgery/hipsurgery.p', max_length=20000)
+def HipSurgery_dataset(args=None) :
+    dataset = Dataset(name='HipSurgery', path='preprocess/MIMIC_Datasets/HipSurgery/hipsurgery.p', max_length=20000, args=args)
     set_balanced_pos_weight(dataset)
     dataset.test_data = dataset.test_data.mock(n=5000)
     return dataset
 
-def Phenotyping_dataset() :
-    dataset = Dataset(name='Phenotyping', path='preprocess/MIMIC_Datasets/Diagnosis/diagnosis.p', max_length=20000)
+def Phenotyping_dataset(args=None) :
+    dataset = Dataset(name='Phenotyping', path='preprocess/MIMIC_Datasets/Diagnosis/diagnosis.p', max_length=20000, args=args)
     y = np.array(dataset.train_data.y)
     dataset.pos_weight = list(len(y) / y.sum(0) - 1)
     

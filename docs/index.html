@@ -23,38 +23,50 @@
 <body>
 
     <div class='container'>
-        <div class='row'>
-            <h1 style="text-align:center;">Graphs</h1>
+        <div class='row mt-3 mb-3'>
+            <div class='col'>
+                <h1 style="text-align:center;">Attention is not Explanation -- Results</h1>
+            </div>
         </div>
         <div class='row'>
             <form class='form-inline'>
                 <div class="form-group mb-2">
-		    <label for="dataset">Dataset: </label>
+		            <label class="col-form-label" for="dataset">Dataset: </label>
                     <select name="Dataset" id="dataset" class="form-control">
-                        <option value="sst">SST</option>
-                        <option value="imdb">IMDB</option>
-                        <option value="20News_sports">20 NewsGroup</option>
-                        <option value="tweet">ADR</option>
-                        <option value="agnews">AG News</option>
-                        <option value="diab">Diabetes</option>
-                        <option value="anemia">Anemia</option>
-                        <option value="snli">SNLI</option>
-                        <option value="cnn">CNN</option>
-                        <option value="babi_1">Babi 1</option>
-                        <option value="babi_2">Babi 2</option>
-                        <option value="babi_3">Babi 3</option>
+                        <optgroup label="Classification">
+                            <option value="sst">SST</option>
+                            <option value="imdb">IMDB</option>
+                            <option value="20News_sports">20 NewsGroup</option>
+                            <option value="tweet">Adverse Drug Reaction (Twitter)</option>
+                            <option value="agnews">AG News</option>
+                            <option value="diab">MIMICIII - Diabetes</option>
+                            <option value="anemia">MIMICIII - Anemia</option>
+                        </optgroup>
+                        <optgroup label="Natural Language Inference">
+                            <option value="snli">SNLI</option>
+                        </optgroup>
+                        <optgroup label="Question Answering">
+                            <option value="cnn">CNN</option>
+                            <option value="babi_1">Babi 1</option>
+                            <option value="babi_2">Babi 2</option>
+                            <option value="babi_3">Babi 3</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div class="form-group mx-sm-3 mb-2">
-		    <label for="experiment">Experiment: </label>
+		            <label class="col-form-label" for="experiment">Experiment: </label>
                     <select name="Experiment" id="experiment" class="form-control">
-                        <option value="GradientXHist">Gradients</option>
-                        <option value="pyxc-pyc_SP">Leave One Out</option>
-                        <option disabled="disabled">-------------</option>
-                        <option value="Permutation_MAvDY">Permutation Scatterplots</option>
-                        <option disabled="disabled">-------------</option>
-                        <option value="eMaxJDS_Hist">Adversarial Histogram</option>
-                        <option value="eMaxJDS_Scatter">Adversarial Scatterplots</option>
+                        <optgroup label="Feature Importance Correlation">
+                            <option value="GradientXHist">Gradients</option>
+                            <option value="pyxc-pyc_SP">Leave One Out</option>
+                        </optgroup>
+                        <optgroup label="Permutation">
+                            <option value="Permutation_MAvDY">Permutation Scatterplots</option>
+                        </optgroup>
+                        <optgroup label="Adversarial Attention">
+                            <option value="eMaxJDS_Hist">Adversarial Histogram</option>
+                            <option value="eMaxJDS_Scatter">Adversarial Scatterplots</option>
+                        </optgroup>
                     </select>
                     
                 </div>

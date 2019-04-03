@@ -147,3 +147,12 @@ def push_graphs_to_main_directory(model_dirname, name) :
         output_name = os.path.join('graph_outputs', outdir)
         os.makedirs(output_name, exist_ok=True)
         shutil.copyfile(os.path.join(model_dirname, f), os.path.join(output_name, name + '.csv'))
+
+    files = os.listdir(dirname)
+    files = [f for f in files if f == 'evaluate.json']
+    
+    for f in files :
+        outdir = f[:-5]
+        output_name = os.path.join('graph_outputs', outdir)
+        os.makedirs(output_name, exist_ok=True)
+        shutil.copyfile(os.path.join(model_dirname, f), os.path.join(output_name, name + '.json'))

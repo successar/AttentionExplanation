@@ -103,6 +103,7 @@ def get_Babi_1(args=None) :
     Babi_1_dataset.vec.word_dim = 50
     Babi_1_dataset.bsize = 50
     Babi_1_dataset.n_iters = 100
+    Babi_1_dataset.hidden_size = 32
     return Babi_1_dataset
 
 def get_Babi_2(args=None) :
@@ -110,6 +111,7 @@ def get_Babi_2(args=None) :
     Babi_2_dataset.vec.word_dim = 50
     Babi_2_dataset.bsize = 50
     Babi_2_dataset.n_iters = 100
+    Babi_2_dataset.hidden_size = 32
     return Babi_2_dataset
 
 def get_Babi_3(args=None) :
@@ -117,6 +119,7 @@ def get_Babi_3(args=None) :
     Babi_3_dataset.vec.word_dim = 50
     Babi_3_dataset.bsize = 50
     Babi_3_dataset.n_iters = 100
+    Babi_3_dataset.hidden_size = 32
     return Babi_3_dataset
 
 datasets = {

@@ -28,17 +28,20 @@ def generate_basic_config(dataset, exp_name) :
 
 def generate_lstm_config(dataset) :
     config = generate_basic_config(dataset, exp_name='lstm+tanh')
-    config['model']['encoder'].update({'type': 'rnn', 'hidden_size' : 128})
+    hidden_size = dataset.hidden_size if hasattr(dataset, 'hidden_size') else 128
+    config['model']['encoder'].update({'type': 'rnn', 'hidden_size' : hidden_size})
     return config
 
 def generate_average_config(dataset) :
     config = generate_basic_config(dataset, exp_name='average+tanh')
-    config['model']['encoder'].update({'projection' : True, 'hidden_size' : 128, 'activation' : 'tanh', 'type' : 'average'})
+    hidden_size = dataset.hidden_size if hasattr(dataset, 'hidden_size') else 128
+    config['model']['encoder'].update({'projection' : True, 'hidden_size' : hidden_size, 'activation' : 'tanh', 'type' : 'average'})
     return config
 
 def generate_cnn_config(dataset, filters=(1, 3, 5, 7)) :
     config = generate_basic_config(dataset, exp_name='cnn' + str(filters).replace(' ', '') + '+tanh')
-    config['model']['encoder'].update({'kernel_sizes': filters, 'hidden_size' : 256 // len(filters), 'activation' : 'relu', 'type': 'cnn'})
+    hidden_size = dataset.hidden_size if hasattr(dataset, 'hidden_size') else 128
+    config['model']['encoder'].update({'kernel_sizes': filters, 'hidden_size' : hidden_size // len(filters), 'activation' : 'relu', 'type': 'cnn'})
     return config
 
 def generate_vanilla_lstm_config(dataset) :

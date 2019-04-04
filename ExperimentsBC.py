@@ -94,7 +94,7 @@ def generate_graphs_on_latest_model(dataset, config='lstm') :
     config = configurations[config](dataset)
     latest_model = get_latest_model(os.path.join(config['training']['basepath'], config['training']['exp_dirname']))
     evaluator = Evaluator(dataset, latest_model, _type=dataset.trainer_type)
-    _ = evaluator.evaluate(dataset.test_data, save_results=True)
+    # _ = evaluator.evaluate(dataset.test_data, save_results=True)
     generate_graphs(dataset, config['training']['exp_dirname'], evaluator.model, test_data=dataset.test_data)
 
 def generate_adversarial_examples(dataset, config='lstm') :

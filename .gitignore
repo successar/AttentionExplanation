@@ -7,5 +7,5 @@ __pycache__
 TACL-Attention
 # graph_outputs
 Workshop-NAACL-Attention
-
+graph_outputs/adv_*
 !preprocess/*/.gitkeep

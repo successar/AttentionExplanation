@@ -9,3 +9,5 @@ TACL-Attention
 Workshop-NAACL-Attention
 graph_outputs/adv_*
 !preprocess/*/.gitkeep
+!preprocess/*/*.py
+!preprocess/*/*.ipynb

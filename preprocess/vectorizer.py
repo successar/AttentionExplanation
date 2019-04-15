@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from math import ceil
-from tqdm import tqdm_notebook
+from tqdm import tqdm
 from torchtext.vocab import pretrained_aliases
 
 SOS = "<SOS>"
@@ -138,7 +138,7 @@ class Vectorizer:
     def get_seq_for_sents(self, texts):
         sents = self.process_to_sentences(texts)  # (D x S)
         seqs = []
-        for d in tqdm_notebook(sents):
+        for d in tqdm(sents):
             seqs.append(self.texts_to_sequences(d))
 
         return seqs
@@ -183,7 +183,7 @@ class BoWder:
 
     def generate_bow(self, X):
         bow = np.zeros((len(X), len(self.words_to_keep)))
-        for i, x in enumerate(tqdm_notebook(X)):
+        for i, x in enumerate(tqdm(X)):
             x = set(x) - self.idxs_to_remove
             counts = Counter(x)
             for w, c in counts.items():

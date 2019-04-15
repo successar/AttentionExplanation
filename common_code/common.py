@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 from IPython.core.display import HTML, display
-from tqdm import tqdm_notebook
+from tqdm import tqdm_notebook, tqdm
 
 from collections import defaultdict
 

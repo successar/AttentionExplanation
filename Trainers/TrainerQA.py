@@ -11,7 +11,7 @@ class Trainer() :
     
     def train(self, train_data, test_data, n_iters=20, save_on_metric='accuracy') :
         best_metric = 0.0
-        for i in tqdm_notebook(range(n_iters)) :
+        for i in tqdm(range(n_iters)) :
             self.model.train(train_data)
             predictions, attentions = self.model.evaluate(test_data)
             predictions = np.array(predictions)

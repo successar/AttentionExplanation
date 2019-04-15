@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 from allennlp.common import Params
 from sklearn.utils import shuffle
-from tqdm import tqdm_notebook
+from tqdm import tqdm
 
 from Transparency.model.modules.Decoder import AttnDecoder
 from Transparency.model.modules.Encoder import Encoder
@@ -117,7 +117,7 @@ class Model() :
         batches = list(range(0, N, bsize))
         batches = shuffle(batches)
 
-        for n in tqdm_notebook(batches) :
+        for n in tqdm(batches) :
             torch.cuda.empty_cache()
             batch_doc = data[n:n+bsize]
             batch_data = BatchHolder(batch_doc)
@@ -161,7 +161,7 @@ class Model() :
         outputs = []
         attns = []
 
-        for n in tqdm_notebook(range(0, N, bsize)) :
+        for n in tqdm(range(0, N, bsize)) :
             torch.cuda.empty_cache()
             batch_doc = data[n:n+bsize]
             batch_data = BatchHolder(batch_doc)
@@ -191,7 +191,7 @@ class Model() :
 
         grads = {'XxE' : [], 'XxE[X]' : [], 'H' : []}
 
-        for n in tqdm_notebook(range(0, N, bsize)) :
+        for n in tqdm(range(0, N, bsize)) :
             torch.cuda.empty_cache()
             batch_doc = data[n:n+bsize]
 
@@ -241,7 +241,7 @@ class Model() :
 
         outputs = []
 
-        for n in tqdm_notebook(range(0, N, bsize)) :
+        for n in tqdm(range(0, N, bsize)) :
             batch_doc = data[n:n+bsize]
             batch_data = BatchHolder(batch_doc)
             po = np.zeros((batch_data.B, batch_data.maxlen, self.decoder.output_size))
@@ -272,7 +272,7 @@ class Model() :
 
         permutations = []
 
-        for n in tqdm_notebook(range(0, N, bsize)) :
+        for n in tqdm(range(0, N, bsize)) :
             torch.cuda.empty_cache()
             batch_doc = data[n:n+bsize]
             batch_data = BatchHolder(batch_doc)
@@ -329,7 +329,7 @@ class Model() :
         adverse_attn = []
         adverse_output = []
 
-        for n in tqdm_notebook(range(0, N, bsize)) :
+        for n in tqdm(range(0, N, bsize)) :
             torch.cuda.empty_cache()
             batch_doc = data[n:n+bsize]
             batch_data = BatchHolder(batch_doc)
@@ -368,7 +368,7 @@ class Model() :
                 logodds[k] = float('-inf')
         logodds = torch.Tensor(logodds).to(device)
 
-        for n in tqdm_notebook(range(0, N, bsize)) :
+        for n in tqdm(range(0, N, bsize)) :
             torch.cuda.empty_cache()
             batch_doc = data[n:n+bsize]
             batch_data = BatchHolder(batch_doc)
@@ -407,7 +407,7 @@ class Model() :
 
         words_to_select = torch.cat([words_neg, words_pos], dim=0) #(2, 5)
 
-        for n in tqdm_notebook(range(0, N, bsize)) :
+        for n in tqdm(range(0, N, bsize)) :
             torch.cuda.empty_cache()
             batch_doc = data[n:n+bsize]
             batch_data = BatchHolder(batch_doc)

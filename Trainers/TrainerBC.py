@@ -16,7 +16,7 @@ class Trainer() :
     
     def train(self, train_data, test_data, n_iters=20, save_on_metric='roc_auc') :
         best_metric = 0.0
-        for i in tqdm_notebook(range(n_iters)) :
+        for i in tqdm(range(n_iters)) :
             self.model.train(train_data.X, train_data.y)
             predictions, attentions = self.model.evaluate(test_data.X)
             predictions = np.array(predictions)

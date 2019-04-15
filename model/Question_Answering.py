@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from sklearn.utils import shuffle
-from tqdm import tqdm_notebook
+from tqdm import tqdm
 from allennlp.common import Params
 
 from .modelUtils import isTrue, get_sorting_index_with_noise_from_lengths
@@ -136,7 +136,7 @@ class Model() :
         batches = list(range(0, N, bsize))
         batches = shuffle(batches)
 
-        for n in tqdm_notebook(batches) :
+        for n in tqdm(batches) :
             torch.cuda.empty_cache()
             batch_doc = docs[n:n+bsize]
             batch_ques = questions[n:n+bsize]
@@ -184,7 +184,7 @@ class Model() :
 
         outputs = []
         attns = []
-        for n in tqdm_notebook(range(0, N, bsize)) :
+        for n in tqdm(range(0, N, bsize)) :
             torch.cuda.empty_cache()
             batch_doc = docs[n:n+bsize]
             batch_ques = questions[n:n+bsize]
@@ -251,7 +251,7 @@ class Model() :
         permutations_predict = []
         permutations_diff = []
 
-        for n in tqdm_notebook(range(0, N, bsize)) :
+        for n in tqdm(range(0, N, bsize)) :
             torch.cuda.empty_cache()
             batch_doc = docs[n:n+bsize]
             batch_ques = questions[n:n+bsize]
@@ -312,7 +312,7 @@ class Model() :
 
         outputs, attns, diffs = [], [], []
 
-        for n in tqdm_notebook(batches) :
+        for n in tqdm(batches) :
             torch.cuda.empty_cache()
             batch_doc = docs[n:n+bsize]
             batch_ques = questions[n:n+bsize]
@@ -415,7 +415,7 @@ class Model() :
         N = len(questions)
         output_diffs = []
 
-        for n in tqdm_notebook(range(0, N, bsize)) :
+        for n in tqdm(range(0, N, bsize)) :
             torch.cuda.empty_cache()
             batch_doc = docs[n:n+bsize]
             batch_ques = questions[n:n+bsize]

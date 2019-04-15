@@ -3,7 +3,7 @@
 This is code for the project : https://arxiv.org/abs/1902.10186 . 
 We will be updating it in coming weeks to include instructions on how to download and process the data and run the experiments.
 
-This project requires compiling `pytorch` from source master branch or use `pytorch-nightly`. We use features that are not in stable release.
+This project requires compiling `pytorch` from source master branch or use `pytorch-nightly`. We use features that are not in stable release. It also requires installation of torchtext version 0.4.0
 
 Update
 ------

@@ -1,0 +1,6 @@
+*.zip
+snli_dataset.csv
+entity_list.txt
+snli_1.0/**
+__MACOSX/**
+vec_snli.p

@@ -47,11 +47,12 @@ class DataHolder() :
         return DataHolder(**data_kwargs)
 
 class Dataset() :
-    def __init__(self, name, path=None, vec=None, min_length=None, max_length=None, args=None) :
+    def __init__(self, name, path, min_length=None, max_length=None, args=None) :
         self.name = name
-        if args is not None and path is not None and hasattr(args, 'data_dir') :
+        if args is not None and hasattr(args, 'data_dir') :
             path = os.path.join(args.data_dir, path)
-        self.vec = pickle.load(open(path, 'rb')) if vec is None else vec
+            
+        self.vec = pickle.load(open(path, 'rb'))
 
         X, Xt = self.vec.seq_text['train'], self.vec.seq_text['test']
         y, yt = self.vec.label['train'], self.vec.label['test']
@@ -95,17 +96,17 @@ class Dataset() :
 ########################################## Dataset Loaders ################################################################################
 
 def SST_dataset(args=None) :
-    dataset = Dataset(name='sst', path='preprocess/SST/sst.p', min_length=5, args=args)
+    dataset = Dataset(name='sst', path='preprocess/SST/vec_sst.p', min_length=5, args=args)
     set_balanced_pos_weight(dataset)
     return dataset
 
 def IMDB_dataset(args=None) :
-    dataset = Dataset(name='imdb', path='preprocess/IMDB/imdb_data.p', min_length=6, args=args)
+    dataset = Dataset(name='imdb', path='preprocess/IMDB/vec_imdb.p', min_length=6, args=args)
     set_balanced_pos_weight(dataset)
     return dataset
 
 def News20_dataset(args=None) :
-    dataset = Dataset(name='20News_sports', path='preprocess/20News/vec_sports.p', min_length=6, max_length=500, args=args)
+    dataset = Dataset(name='20News_sports', path='preprocess/20News/vec_20news_sports.p', min_length=6, max_length=500, args=args)
     set_balanced_pos_weight(dataset)
     return dataset
 
@@ -115,31 +116,17 @@ def ADR_dataset(args=None) :
     return dataset
 
 def Anemia_dataset(args=None) :
-    dataset = Dataset(name='anemia', path='preprocess/MIMIC/vec_icd9_anemia.p', max_length=4000, args=args)
+    dataset = Dataset(name='anemia', path='preprocess/MIMIC/vec_anemia.p', max_length=4000, args=args)
     set_balanced_pos_weight(dataset)
     return dataset
 
-def generate_diabetes(args=None) :
-    vec = pickle.load(open('preprocess/MIMIC/vec_icd9.p', 'rb'))
-    diabetes_label = vec.label2idx['250.00']
-    X, Xt = vec.seqs['train'], vec.seqs['test']
-    y, yt = vec.label_one_hot['train'][:, diabetes_label], vec.label_one_hot['test'][:, diabetes_label]
-
-    vec.seq_text = {'train' : X, 'test' : Xt}
-    vec.label = {'train' : y, 'test' : yt}
-
-    vec.seqs = None
-    vec.label_one_hot = None
-
-    return Dataset(name='diab', path=None, vec=vec, min_length=6, max_length=4000, args=args)
-
 def Diabetes_dataset(args=None) :
-    dataset = generate_diabetes(args)
+    dataset = Dataset(name='anemia', path='preprocess/MIMIC/vec_diabetes.p', min_length=6, max_length=4000, args=args)
     set_balanced_pos_weight(dataset)
     return dataset
 
 def AGNews_dataset(args=None) :
-    dataset = Dataset(name='agnews', path='preprocess/ag_news/vec.p', args=args)
+    dataset = Dataset(name='agnews', path='preprocess/ag_news/vec_agnews.p', args=args)
     set_balanced_pos_weight(dataset)
     return dataset
 

@@ -1,3 +1,4 @@
 *.csv
+!*_50_hadm_ids.csv
 vec_*.p
 *.wv*

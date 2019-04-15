@@ -193,34 +193,34 @@ def plot_attn_diff(dataset, test_data, diffs, save_name=None, dirname='') :
 def generate_graphs(dataset, exp_name, model, test_data) :
     logging.info("Generating graph for %s", model.dirname)
 
-    # try :
-    #     logging.info("Generating Gradients Graph ...")
-    #     grads = pload(model, 'gradients')
-    #     process_grads(grads)
-    #     plot_grads(test_data, grads, dirname=model.dirname)
-    # except FileNotFoundError :
-    #     logging.warning("Gradient don't exist ...")
+    try :
+        logging.info("Generating Gradients Graph ...")
+        grads = pload(model, 'gradients')
+        process_grads(grads)
+        plot_grads(test_data, grads, dirname=model.dirname)
+    except FileNotFoundError :
+        logging.warning("Gradient don't exist ...")
 
-    # try :
-    #     logging.info("Generating Permutations Graph ...")
-    #     perms = pload(model, 'permutations')
-    #     plot_permutations(test_data, perms, dirname=model.dirname)
-    # except FileNotFoundError:
-    #     logging.warning("Permutation Outputs doesn't exist")
+    try :
+        logging.info("Generating Permutations Graph ...")
+        perms = pload(model, 'permutations')
+        plot_permutations(test_data, perms, dirname=model.dirname)
+    except FileNotFoundError:
+        logging.warning("Permutation Outputs doesn't exist")
 
-    # try :
-    #     logging.info("Generating Multi Adversarial Graph ...")
-    #     multi_adversarial_outputs = pload(model, 'multi_adversarial')
-    #     _ = plot_multi_adversarial(test_data, multi_adversarial_outputs, dirname=model.dirname)
-    # except FileNotFoundError :
-    #     logging.warning("Multi Adversarial Output doesn't exists ...")
+    try :
+        logging.info("Generating Multi Adversarial Graph ...")
+        multi_adversarial_outputs = pload(model, 'multi_adversarial')
+        _ = plot_multi_adversarial(test_data, multi_adversarial_outputs, dirname=model.dirname)
+    except FileNotFoundError :
+        logging.warning("Multi Adversarial Output doesn't exists ...")
 
-    # try :
-    #     logging.info("Generating Remove and Run Graph ...")
-    #     remove_outputs = pload(model, 'remove_and_run')
-    #     plot_y_diff(test_data, remove_outputs, save_name="pyxc-pyc", dirname=model.dirname)
-    # except FileNotFoundError:
-    #     logging.warning("Remove Outputs doesn't exist")
+    try :
+        logging.info("Generating Remove and Run Graph ...")
+        remove_outputs = pload(model, 'remove_and_run')
+        plot_y_diff(test_data, remove_outputs, save_name="pyxc-pyc", dirname=model.dirname)
+    except FileNotFoundError:
+        logging.warning("Remove Outputs doesn't exist")
 
     # try :
     #     logging.info("Generating logodds diff Graph ... ")

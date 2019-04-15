@@ -32,15 +32,6 @@ def run_experiments_on_latest_model(dataset, config, force_run=True) :
         evaluator.remove_and_run_experiment(test_data, force_run=force_run)
     except :
         return
-        
-def generate_graphs_on_encoders(dataset) :
-    generate_graphs_on_latest_model(dataset, 'cnn')
-    generate_graphs_on_latest_model(dataset, 'average')
-    generate_graphs_on_latest_model(dataset, 'lstm')
-
-    generate_graphs_on_latest_model(dataset, 'cnn_dot')
-    generate_graphs_on_latest_model(dataset, 'average_dot')
-    generate_graphs_on_latest_model(dataset, 'lstm_dot')
     
 def generate_graphs_on_latest_model(dataset, config) :
     try :
@@ -53,23 +44,14 @@ def generate_graphs_on_latest_model(dataset, config) :
     except :
         return
 
-def train_dataset_on_encoders_tanh(dataset) :
-    train_dataset(dataset, 'cnn')
-    train_dataset(dataset, 'average')
-    train_dataset(dataset, 'lstm')
-
-    run_experiments_on_latest_model(dataset, 'cnn')
-    run_experiments_on_latest_model(dataset, 'average')
-    run_experiments_on_latest_model(dataset, 'lstm')
-
-def train_dataset_on_encoders_dot(dataset) :
-    train_dataset(dataset, 'cnn_dot')
-    train_dataset(dataset, 'average_dot')
-    train_dataset(dataset, 'lstm_dot')
-
-    run_experiments_on_latest_model(dataset, 'cnn_dot')
-    run_experiments_on_latest_model(dataset, 'average_dot')
-    run_experiments_on_latest_model(dataset, 'lstm_dot')
+def train_dataset_on_encoders(dataset, encoders) :
+    for e in encoders :
+        train_dataset(dataset, e)
+        run_experiments_on_latest_model(dataset, e)
+        
+def generate_graphs_on_encoders(dataset, encoders) :
+    for e in encoders :
+        generate_graphs_on_latest_model(dataset, e)
 
 def get_results(path) :
     latest_model = get_latest_model(path)

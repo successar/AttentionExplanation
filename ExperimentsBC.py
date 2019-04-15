@@ -15,32 +15,14 @@ def train_dataset(dataset, config='lstm') :
     except :
         return
 
-def train_dataset_on_encoders_tanh(dataset) :
-    train_dataset(dataset, 'cnn')
-    train_dataset(dataset, 'average')
-    train_dataset(dataset, 'lstm')
-
-    run_experiments_on_latest_model(dataset, 'cnn')
-    run_experiments_on_latest_model(dataset, 'average')
-    run_experiments_on_latest_model(dataset, 'lstm')
-
-def train_dataset_on_encoders_dot(dataset) :
-    train_dataset(dataset, 'cnn_dot')
-    train_dataset(dataset, 'average_dot')
-    train_dataset(dataset, 'lstm_dot')
-
-    run_experiments_on_latest_model(dataset, 'cnn_dot')
-    run_experiments_on_latest_model(dataset, 'average_dot')
-    run_experiments_on_latest_model(dataset, 'lstm_dot')
-    
-def generate_graphs_on_encoders(dataset) :
-    generate_graphs_on_latest_model(dataset, 'cnn')
-    generate_graphs_on_latest_model(dataset, 'average')
-    generate_graphs_on_latest_model(dataset, 'lstm')
-
-    generate_graphs_on_latest_model(dataset, 'cnn_dot')
-    generate_graphs_on_latest_model(dataset, 'average_dot')
-    generate_graphs_on_latest_model(dataset, 'lstm_dot')
+def train_dataset_on_encoders(dataset, encoders) :
+    for e in encoders :
+        train_dataset(dataset, e)
+        run_experiments_on_latest_model(dataset, e)
+        
+def generate_graphs_on_encoders(dataset, encoders) :
+    for e in encoders :
+        generate_graphs_on_latest_model(dataset, e)
 
 def train_lr_on_dataset(dataset) :
     config = {
@@ -75,26 +57,14 @@ def run_experiments_on_latest_model(dataset, config='lstm', force_run=True) :
         evaluator.gradient_experiment(test_data, force_run=force_run)
         evaluator.permutation_experiment(test_data, force_run=force_run)
         evaluator.adversarial_experiment(test_data, force_run=force_run)
-#         evaluator.remove_and_run_experiment(test_data, force_run=force_run)
+        evaluator.remove_and_run_experiment(test_data, force_run=force_run)
     except :
         return
-    
-def run_experiments_on_all_valid_models(dataset, config='lstm') :
-    config = configurations[config](dataset)
-    models = get_all_models(os.path.join(config['training']['basepath'], config['training']['exp_dirname']))
-    for latest_model in models :
-        evaluator = Evaluator(dataset, latest_model, _type=dataset.trainer_type)
-        test_data = dataset.test_data
-        _ = evaluator.evaluate(test_data, save_results=True)
-        evaluator.gradient_experiment(test_data)
-        evaluator.permutation_experiment(test_data)
-        evaluator.adversarial_experiment(test_data)
         
 def generate_graphs_on_latest_model(dataset, config='lstm') :
     config = configurations[config](dataset)
     latest_model = get_latest_model(os.path.join(config['training']['basepath'], config['training']['exp_dirname']))
     evaluator = Evaluator(dataset, latest_model, _type=dataset.trainer_type)
-    # _ = evaluator.evaluate(dataset.test_data, save_results=True)
     generate_graphs(dataset, config['training']['exp_dirname'], evaluator.model, test_data=dataset.test_data)
 
 def generate_adversarial_examples(dataset, config='lstm') :

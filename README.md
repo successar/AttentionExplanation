@@ -13,7 +13,28 @@ We are providing code to run experiments on all datasets except MIMIC for now (t
 1. Clone the repository as `git clone https://github.com/successar/AttentionExplanation.git Transparency` (Note this is important.)
 2. Set your PYTHONPATH to include the directory name which contains this repository (All imports in the code are of form Transparency.*)
 3. Go to the `Transparency/preprocess` folder and follow the instructions to process datasets.
-4. From the main folder, run `python train_and_run_experiments_bc.py --dataset {dataset_name} --data_dir . --output_dir outputs/ --attention {attention_type}`
 
-For example, if you want to run experiments for IMDB dataset with Tanh attention, please use `python train_and_run_experiments_bc.py --dataset imdb --data_dir . --output_dir outputs/ --attention tanh`
+To run Binary Classification Tasks,
+----------------------------------
+
+1. From the main folder, run `python train_and_run_experiments_bc.py --dataset {dataset_name} --data_dir . --output_dir outputs/ --attention {attention_type} --encoder {encoder_type}`
+
+Valid values for `dataset_name` are  `[sst, imdb, 20News_sports, tweet, Anemia, Diabetes, AgNews]`.
+
+Valid values for `encoder_type` is `[cnn, lstm, average]`.
+Valid values for `attention_type` is `[tanh, dot]`.
+
+For example, if you want to run experiments for IMDB dataset with CNN encoder and Tanh attention, please use `python train_and_run_experiments_bc.py --dataset imdb --data_dir . --output_dir outputs/ --attention tanh --encoder cnn`
+
+To run QA or SNLI tasks,
+------------------------
+
+1. From the main folder, run `python train_and_run_experiments_qa.py --dataset {dataset_name} --data_dir . --output_dir outputs/ --attention {attention_type} --encoder {encoder_type}`
+
+Valid values for `dataset_name` are  `[snli, cnn, babi_1, babi_2, babi_3]`.
+
+Valid values for `encoder_type` is `[cnn, lstm, average]`.
+Valid values for `attention_type` is `[tanh, dot]`.
+
+For example, if you want to run experiments for snli dataset with LSTM encoder and Tanh attention, please use `python train_and_run_experiments_bc.py --dataset snli --data_dir . --output_dir outputs/ --attention tanh --encoder lstm`
 

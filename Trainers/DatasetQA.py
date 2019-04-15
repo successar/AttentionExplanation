@@ -44,15 +44,15 @@ def get_data_from_vec(vec, _types, sort=False) :
     return data
 
 class Dataset() :
-    def __init__(self, name, path=None, vec=None, filters=[], args=None) :
+    def __init__(self, name, path=None, vec=None, args=None) :
         self.name = name
         if args is not None and path is not None and hasattr(args, 'data_dir') :
             path = os.path.join(args.data_dir, path)
         self.vec = pickle.load(open(path, 'rb')) if vec is None else vec
         self.vec.entity_size = len(self.vec.entity2idx)
 
-        self.train_data = get_data_from_vec(self.vec, ['train'] + filters)
-        self.test_data = get_data_from_vec(self.vec, ['test'] + filters, sort=True)
+        self.train_data = get_data_from_vec(self.vec, ['train'])
+        self.test_data = get_data_from_vec(self.vec, ['test'], sort=True)
         self.by_class = False
         
         self.save_on_metric = 'accuracy'
@@ -99,7 +99,7 @@ def get_CNN(args=None) :
     return CNN_dataset
 
 def get_Babi_1(args=None) :
-    Babi_1_dataset = Dataset(name='babi_1', path='preprocess/Babi/babi.p', filters=['qa1_single-supporting-fact_'], args=args)
+    Babi_1_dataset = Dataset(name='babi_1', path='preprocess/Babi/vec_babi_qa1_single-supporting-fact_.p', args=args)
     Babi_1_dataset.vec.word_dim = 50
     Babi_1_dataset.bsize = 50
     Babi_1_dataset.n_iters = 100
@@ -107,7 +107,7 @@ def get_Babi_1(args=None) :
     return Babi_1_dataset
 
 def get_Babi_2(args=None) :
-    Babi_2_dataset = Dataset(name='babi_2', path='preprocess/Babi/babi.p', filters=['qa2_two-supporting-facts_'], args=args)
+    Babi_2_dataset = Dataset(name='babi_2', path='preprocess/Babi/vec_babi_qa2_two-supporting-facts_.p', args=args)
     Babi_2_dataset.vec.word_dim = 50
     Babi_2_dataset.bsize = 50
     Babi_2_dataset.n_iters = 100
@@ -115,7 +115,7 @@ def get_Babi_2(args=None) :
     return Babi_2_dataset
 
 def get_Babi_3(args=None) :
-    Babi_3_dataset = Dataset(name='babi_3', path='preprocess/Babi/babi.p', filters=['qa3_three-supporting-facts_'], args=args)
+    Babi_3_dataset = Dataset(name='babi_3', path='preprocess/Babi/vec_babi_qa3_three-supporting-facts_.p', args=args)
     Babi_3_dataset.vec.word_dim = 50
     Babi_3_dataset.bsize = 50
     Babi_3_dataset.n_iters = 100

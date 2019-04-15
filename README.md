@@ -3,7 +3,13 @@
 This is code for the project : https://arxiv.org/abs/1902.10186 . 
 We will be updating it in coming weeks to include instructions on how to download and process the data and run the experiments.
 
-This project requires compiling `pytorch` from source master branch or use `pytorch-nightly`. We use features that are not in stable release. It also requires installation of torchtext version 0.4.0
+Prerequisties
+--------------
+
+This project requires compiling `pytorch` from source master branch or use `pytorch-nightly`. We use features that are not in stable release. It also requires installation of torchtext version 0.4.0 from source.
+
+After installation of above, please use `pip install -r requirements.txt`.
+Also, `python -m spacy download en` to include the english language pack for spacy if not already present.
 
 Update
 ------
@@ -11,7 +17,7 @@ Update
 We are providing code to run experiments on all datasets except MIMIC for now (the latter requires access to MIMIC datasets)
 
 1. Clone the repository as `git clone https://github.com/successar/AttentionExplanation.git Transparency` (Note this is important.)
-2. Set your PYTHONPATH to include the directory name which contains this repository (All imports in the code are of form Transparency.*)
+2. Set your PYTHONPATH to include the directory path which contains this repository (All imports in the code are of form Transparency.*). One way to do this is `export PYTHONPATH="path/to/folder"` 
 3. Go to the `Transparency/preprocess` folder and follow the instructions to process datasets.
 
 To run Binary Classification Tasks,

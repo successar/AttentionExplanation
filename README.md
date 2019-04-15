@@ -17,7 +17,11 @@ Update
 We are providing code to run experiments on all datasets except MIMIC for now (the latter requires access to MIMIC datasets)
 
 1. Clone the repository as `git clone https://github.com/successar/AttentionExplanation.git Transparency` (Note this is important.)
-2. Set your PYTHONPATH to include the directory path which contains this repository (All imports in the code are of form Transparency.* -- If you see error `ModuleNotFoundError: No module named 'Transparency'`, most probably your PYTHONPATH is not set.). One way to do this is `export PYTHONPATH="path/to/folder"` 
+
+2. Set your PYTHONPATH to include the directory path which contains this repository (All imports in the code are of form Transparency.* -- If you see error `ModuleNotFoundError: No module named 'Transparency'`, most probably your PYTHONPATH is not set.). 
+
+For example if your cloned repository reside in `/home/username/Transparency`, then one way to do this is `export PYTHONPATH="/home/username"` from command line or add it to your `~/.bashrc` .
+
 3. Go to the `Transparency/preprocess` folder and follow the instructions to process datasets.
 
 To run Binary Classification Tasks,

@@ -48,3 +48,8 @@ Valid values for `attention_type` is `[tanh, dot]`.
 
 For example, if you want to run experiments for snli dataset with LSTM encoder and Tanh attention, please use `python train_and_run_experiments_bc.py --dataset snli --data_dir . --output_dir outputs/ --attention tanh --encoder lstm`
 
+Outputs
+--------
+
+Both BC and QA tasks will generate the graphs used in paper in the folder `Transparency/graph_outputs` .
+You can also browse our graphs here -- https://successar.github.io/AttentionExplanation/docs/ .

@@ -14,7 +14,7 @@ Also, `python -m spacy download en` to include the english language pack for spa
 Update
 ------
 
-We are providing code to run experiments on all datasets except MIMIC for now (the latter requires access to MIMIC datasets)
+We are providing code to run experiments on all datasets except MIMIC for now (the latter requires access to MIMIC datasets) . For obtaining ADR tweets data, please contact us directly (a large portion of tweets we have used in this experiments have been removed from twitter website).
 
 1. Clone the repository as `git clone https://github.com/successar/AttentionExplanation.git Transparency` (Note this is important.)
 

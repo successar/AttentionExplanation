@@ -14,10 +14,14 @@ Also, `python -m spacy download en` to include the english language pack for spa
 Update
 ------
 
-We are providing code to run experiments on all datasets.
+We are providing code to run experiments on all datasets . For obtaining ADR tweets data, please contact us directly (a large portion of tweets we have used in this experiments have been removed from twitter website).
 
 1. Clone the repository as `git clone https://github.com/successar/AttentionExplanation.git Transparency` (Note this is important.)
-2. Set your PYTHONPATH to include the directory path which contains this repository (All imports in the code are of form Transparency.* -- If you see error `ModuleNotFoundError: No module named 'Transparency'`, most probably your PYTHONPATH is not set.). One way to do this is `export PYTHONPATH="path/to/folder"` 
+
+2. Set your PYTHONPATH to include the directory path which contains this repository (All imports in the code are of form Transparency.* -- If you see error `ModuleNotFoundError: No module named 'Transparency'`, most probably your PYTHONPATH is not set.). 
+
+For example if your cloned repository reside in `/home/username/Transparency`, then one way to do this is `export PYTHONPATH="/home/username"` from command line or add it to your `~/.bashrc` .
+
 3. Go to the `Transparency/preprocess` folder and follow the instructions to process datasets.
 
 To run Binary Classification Tasks,
@@ -44,3 +48,8 @@ Valid values for `attention_type` is `[tanh, dot]`.
 
 For example, if you want to run experiments for snli dataset with LSTM encoder and Tanh attention, please use `python train_and_run_experiments_bc.py --dataset snli --data_dir . --output_dir outputs/ --attention tanh --encoder lstm`
 
+Outputs
+--------
+
+Both BC and QA tasks will generate the graphs used in paper in the folder `Transparency/graph_outputs` .
+You can also browse our graphs here -- https://successar.github.io/AttentionExplanation/docs/ .

@@ -102,7 +102,7 @@ def get_Babi_1(args=None) :
     Babi_1_dataset = Dataset(name='babi_1', path='preprocess/Babi/vec_babi_qa1_single-supporting-fact_.p', args=args)
     Babi_1_dataset.vec.word_dim = 50
     Babi_1_dataset.bsize = 50
-    Babi_1_dataset.n_iters = 10
+    Babi_1_dataset.n_iters = 100
     Babi_1_dataset.hidden_size = 32
     return Babi_1_dataset
 

@@ -12,7 +12,8 @@ def train_dataset(dataset, config) :
         evaluator = Evaluator(dataset, trainer.model.dirname)
         _ = evaluator.evaluate(dataset.test_data, save_results=True)
         return trainer, evaluator
-    except :
+    except Exception as e:
+        print(e)
         return
 
 def run_evaluator_on_latest_model(dataset, config) :

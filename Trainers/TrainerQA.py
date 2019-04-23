@@ -20,13 +20,8 @@ class Trainer() :
                 print_metrics(test_metrics)
 
             metric = test_metrics[save_on_metric]
-            if metric > best_metric and i > 0 :
-                best_metric = metric
-                save_model = True
-                print("Model Saved on ", save_on_metric, metric)
-            else :
-                save_model = False
-                print("Model not saved on ", save_on_metric, metric)
+            save_model = True
+            print("Model Saved on ", save_on_metric, metric)
             
             dirname = self.model.save_values(save_model=save_model)
             f = open(dirname + '/epoch.txt', 'a')

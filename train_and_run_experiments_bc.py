@@ -21,11 +21,11 @@ encoders = ['cnn', 'lstm', 'average'] if args.encoder == 'all' else [args.encode
 
 if args.attention == 'tanh' :
     train_dataset_on_encoders(dataset, encoders)
-    generate_graphs_on_encoders(dataset, encoders)
+#    generate_graphs_on_encoders(dataset, encoders)
 elif args.attention == 'dot' :
     encoders = [e + '_dot' for e in encoders]
     train_dataset_on_encoders(dataset, encoders)
-    generate_graphs_on_encoders(dataset, encoders)
+#    generate_graphs_on_encoders(dataset, encoders)
 else :
     raise LookupError("Attention not found ...")
 

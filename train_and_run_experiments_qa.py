@@ -19,15 +19,13 @@ if args.output_dir is not None :
 
 encoders = ['cnn', 'lstm', 'average'] if args.encoder == 'all' else [args.encoder]
 
-if args.attention == 'tanh' :
+if args.attention in ['tanh', 'all'] :
     train_dataset_on_encoders(dataset, encoders)
 #    generate_graphs_on_encoders(dataset, encoders)
-elif args.attention == 'dot' :
+if args.attention in ['dot', 'all'] :
     encoders = [e + '_dot' for e in encoders]
     train_dataset_on_encoders(dataset, encoders)
 #    generate_graphs_on_encoders(dataset, encoders)
-else :
-    raise LookupError("Attention not found ...")
 
 
 

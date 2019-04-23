@@ -54,14 +54,18 @@ class Dataset() :
             
         self.vec = pickle.load(open(path, 'rb'))
 
-        X, Xt = self.vec.seq_text['train'], self.vec.seq_text['test']
-        y, yt = self.vec.label['train'], self.vec.label['test']
+        X, Xd, Xt = self.vec.seq_text['train'], self.vec.seq_text['dev'], self.vec.seq_text['test']
+        y, yd, yt = self.vec.label['train'], self.vec.label['dev'], self.vec.label['test']
 
         X, y = filterbylength(X, y, min_length=min_length, max_length=max_length)
         Xt, yt = filterbylength(Xt, yt, min_length=min_length, max_length=max_length)
         Xt, yt = sortbylength(Xt, yt)
+        
+        Xd, yd = filterbylength(Xd, yd, min_length=min_length, max_length=max_length)
+        Xd, yd = sortbylength(Xd, yd)
 
         self.train_data = DataHolder(X, y)
+        self.dev_data = DataHolder(Xd, yd)
         self.test_data = DataHolder(Xt, yt)
         
         self.trainer_type = 'Single_Label'

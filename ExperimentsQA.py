@@ -8,7 +8,7 @@ def train_dataset(dataset, config) :
         config = configurations_qa[config](dataset)
         n_iters = dataset.n_iters if hasattr(dataset, 'n_iters') else 25
         trainer = Trainer(dataset, config=config, _type=dataset.trainer_type)
-        trainer.train(dataset.train_data, dataset.test_data, n_iters=n_iters, save_on_metric=dataset.save_on_metric)
+        trainer.train(dataset.train_data, dataset.dev_data, n_iters=n_iters, save_on_metric=dataset.save_on_metric)
         evaluator = Evaluator(dataset, trainer.model.dirname)
         _ = evaluator.evaluate(dataset.test_data, save_results=True)
         return trainer, evaluator

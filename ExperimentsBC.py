@@ -8,7 +8,7 @@ def train_dataset(dataset, config='lstm') :
     try :
         config = configurations[config](dataset)
         trainer = Trainer(dataset, config=config, _type=dataset.trainer_type)
-        trainer.train(dataset.train_data, dataset.test_data, n_iters=8, save_on_metric=dataset.save_on_metric)
+        trainer.train(dataset.train_data, dataset.dev_data, n_iters=8, save_on_metric=dataset.save_on_metric)
         evaluator = Evaluator(dataset, trainer.model.dirname, _type=dataset.trainer_type)
         _ = evaluator.evaluate(dataset.test_data, save_results=True)
         return trainer, evaluator

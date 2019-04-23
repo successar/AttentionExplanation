@@ -53,6 +53,7 @@ class Dataset() :
 
         self.train_data = get_data_from_vec(self.vec, ['train'])
         self.test_data = get_data_from_vec(self.vec, ['test'], sort=True)
+        self.dev_data = get_data_from_vec(self.vec, ['dev'], sort=True)
         self.by_class = False
         
         self.save_on_metric = 'accuracy'

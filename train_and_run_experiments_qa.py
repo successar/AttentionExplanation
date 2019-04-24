@@ -4,7 +4,7 @@ parser.add_argument('--dataset', type=str, required=True)
 parser.add_argument("--data_dir", type=str, required=True)
 parser.add_argument("--output_dir", type=str)
 parser.add_argument('--encoder', type=str, choices=['cnn', 'lstm', 'average', 'all'], required=True)
-parser.add_argument('--attention', type=str, choices=['tanh', 'dot'], required=True)
+parser.add_argument('--attention', type=str, choices=['tanh', 'dot', 'all'], required=True)
 
 args, extras = parser.parse_known_args()
 args.extras = extras

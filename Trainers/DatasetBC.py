@@ -125,7 +125,7 @@ def Anemia_dataset(args=None) :
     return dataset
 
 def Diabetes_dataset(args=None) :
-    dataset = Dataset(name='anemia', path='preprocess/MIMIC/vec_diabetes.p', min_length=6, max_length=4000, args=args)
+    dataset = Dataset(name='diab', path='preprocess/MIMIC/vec_diabetes.p', min_length=6, max_length=4000, args=args)
     set_balanced_pos_weight(dataset)
     return dataset
 

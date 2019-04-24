@@ -34,6 +34,7 @@ class Trainer() :
                 print("Model not saved on ", save_on_metric, metric)
             
             dirname = self.model.save_values(save_model=save_model)
+            print(dirname)
             f = open(dirname + '/epoch.txt', 'a')
             f.write(str(test_metrics) + '\n')
             f.close()

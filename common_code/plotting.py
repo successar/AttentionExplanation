@@ -106,6 +106,34 @@ def plot_SP_histogram_by_class(ax, spcorr, yhat, bins=30) :
 
     return pd.DataFrame(measures)
 
+def plot_SP_density_by_class(ax, spcorr, yhat, linestyle='-') :
+    sprho = np.array([x[0] for x in spcorr])
+    sppval = np.array([x[1] for x in spcorr])
+
+    measures = {"pval_sig" : {}, "mean" : {}, "std" : {}}
+
+    unique_y = None
+    if len(yhat.shape) == 1 or yhat.shape[1] == 1:
+        yhat = yhat.flatten()
+        yhat = np.round(yhat)
+        unique_y = np.sort(np.unique(yhat))
+
+    if False : #unique_y is not None and len(unique_y) < 4:
+        for y in unique_y :
+            rho = sprho[yhat == y]
+            pval = sppval[yhat == y]
+            measures['pval_sig'][str(int(y))] = "{:.2f}".format((pval <= 0.05).sum() / len(pval))
+            measures['mean'][str(int(y))] = np.mean(rho)
+            measures['std'][str(int(y))] = np.std(rho)
+            sns.kdeplot(rho, linewidth=2, linestyle=linestyle, ax=ax)
+    else :
+        measures['pval_sig']["Overall"] = "{:.2f}".format((sppval <= 0.05).sum() / len(sppval))
+        measures['mean']["Overall"] = np.mean(sprho)
+        measures['std']["Overall"] = np.std(sprho)
+        sns.kdeplot(sprho, linewidth=2, linestyle=linestyle, ax=ax)
+
+    return pd.DataFrame(measures)
+
 def plot_histogram_by_class(ax, values, yhat, bins=40, hist_lims=None) :
     values = np.array(values)
 

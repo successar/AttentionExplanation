@@ -22,11 +22,12 @@ def process_grads(grads) :
 
 def plot_grads(test_data, gradients, dirname='') :
     X, attn, yhat = test_data.P, test_data.attn_hat, test_data.yt_hat
-    fig, ax = init_gridspec(3, 3, len(gradients))
+    fig, ax = init_gridspec(3, 3, len(gradients)-1)
 
     pval_tables = {}
 
     for col, k in enumerate(gradients.keys()) :
+        if k == 'H' : continue
         gradlist = gradients[k]    
         spcorrs = []
         
@@ -42,6 +43,40 @@ def plot_grads(test_data, gradients, dirname='') :
     adjust_gridspec()
     save_axis_in_file(fig, ax[1], dirname, 'GradientXHist')
     save_table_in_file(pval_tables['XxE[X]'], dirname, 'GradientPval')
+    show_gridspec()
+
+def plot_correlation_between_grad_and_loo(test_data, gradients, ydiffs) :
+    X, yhat, attn = test_data.P, test_data.yt_hat, test_data.attn_hat
+    fig, ax = init_gridspec(3, 3, 1)
+    pval_tables = {}
+
+    gradlist = gradients['XxE[X]']
+    spcorrs_gl = []
+    spcorrs_ag = []
+    spcorrs_al = []
+    
+    for i in range(len(X)) :
+        L = len(X[i])
+        ydiff = ydiffs[i]
+        spcorr_gl = kendalltau(list(ydiff[1:L-1]), list(gradlist[i][1:L-1]))
+        spcorrs_gl.append(spcorr_gl)
+
+        spcorr_ag = kendalltau(list(ydiff[1:L-1]), list(attn[i][1:L-1]))
+        spcorrs_ag.append(spcorr_ag)
+
+        spcorr_al = kendalltau(list(attn[i][1:L-1]), list(gradlist[i][1:L-1]))
+        spcorrs_al.append(spcorr_al)
+
+
+    axes = ax[0]
+    pval_tables['XxE[X]'] = plot_SP_density_by_class(axes, spcorrs_ag, yhat)
+    pval_tables['XxE[X]'] = plot_SP_density_by_class(axes, spcorrs_al, yhat, linestyle='--')
+    pval_tables['XxE[X]'] = plot_SP_density_by_class(axes, spcorrs_gl, yhat, linestyle=':')
+    annotate(axes)
+
+    adjust_gridspec()
+    # save_axis_in_file(fig, ax[1], dirname, 'GradientXHist')
+    # save_table_in_file(pval_tables['XxE[X]'], dirname, 'GradientPval')
     show_gridspec()
 
 ###########################################################################################################################
@@ -188,6 +223,8 @@ def generate_graphs(dataset, exp_name, model, test_data) :
         logging.info("Generating Remove and Run Graph ...")
         remove_outputs = pload(model, 'remove_and_run')
         plot_y_diff(test_data, remove_outputs, save_name="pyxc-pyc", dirname=model.dirname)
+        logging.info("Generating corr Grad and LOO")
+        plot_correlation_between_grad_and_loo(test_data, grads, remove_outputs)
     except FileNotFoundError:
         logging.warning("Remove Outputs doesn't exist")
 

@@ -37,6 +37,40 @@ def plot_grads(test_data, gradients, dirname='') :
     save_table_in_file(pval_tables['XxE[X]'], dirname, 'GradientPval')
     show_gridspec()
 
+def plot_correlation_between_grad_and_loo(test_data, gradients, ynew_list) :
+    X, yhat, attn = test_data.X, test_data.yt_hat, test_data.attn_hat
+    fig, ax = init_gridspec(3, 3, 1)
+    pval_tables = {}
+
+    gradlist = gradients['XxE[X]']
+    spcorrs_gl = []
+    spcorrs_ag = []
+    spcorrs_al = []
+    
+    for i in range(len(X)) :
+        L = len(X[i])
+        ydiff = np.abs(ynew_list[i] - yhat[i]).mean(-1)
+        spcorr_gl = kendalltau(list(ydiff[1:L-1]), list(gradlist[i][1:L-1]))
+        spcorrs_gl.append(spcorr_gl)
+
+        spcorr_ag = kendalltau(list(ydiff[1:L-1]), list(attn[i][1:L-1]))
+        spcorrs_ag.append(spcorr_ag)
+
+        spcorr_al = kendalltau(list(attn[i][1:L-1]), list(gradlist[i][1:L-1]))
+        spcorrs_al.append(spcorr_al)
+
+
+    axes = ax[0]
+    pval_tables['XxE[X]'] = plot_SP_density_by_class(axes, spcorrs_ag, yhat)
+    pval_tables['XxE[X]'] = plot_SP_density_by_class(axes, spcorrs_al, yhat, linestyle='--')
+    pval_tables['XxE[X]'] = plot_SP_density_by_class(axes, spcorrs_gl, yhat, linestyle=':')
+    annotate(axes)
+
+    adjust_gridspec()
+    # save_axis_in_file(fig, ax[1], dirname, 'GradientXHist')
+    # save_table_in_file(pval_tables['XxE[X]'], dirname, 'GradientPval')
+    show_gridspec()
+
 ###########################################################################################################################
 
 def plot_permutations(test_data, permutations, dirname='') :
@@ -197,28 +231,35 @@ def generate_graphs(dataset, exp_name, model, test_data) :
         logging.info("Generating Gradients Graph ...")
         grads = pload(model, 'gradients')
         process_grads(grads)
-        plot_grads(test_data, grads, dirname=model.dirname)
+        # plot_grads(test_data, grads, dirname=model.dirname)
     except FileNotFoundError :
         logging.warning("Gradient don't exist ...")
 
-    try :
-        logging.info("Generating Permutations Graph ...")
-        perms = pload(model, 'permutations')
-        plot_permutations(test_data, perms, dirname=model.dirname)
-    except FileNotFoundError:
-        logging.warning("Permutation Outputs doesn't exist")
+    # try :
+    #     logging.info("Generating Permutations Graph ...")
+    #     perms = pload(model, 'permutations')
+    #     plot_permutations(test_data, perms, dirname=model.dirname)
+    # except FileNotFoundError:
+    #     logging.warning("Permutation Outputs doesn't exist")
 
-    try :
-        logging.info("Generating Multi Adversarial Graph ...")
-        multi_adversarial_outputs = pload(model, 'multi_adversarial')
-        _ = plot_multi_adversarial(test_data, multi_adversarial_outputs, dirname=model.dirname)
-    except FileNotFoundError :
-        logging.warning("Multi Adversarial Output doesn't exists ...")
+    # try :
+    #     logging.info("Generating Multi Adversarial Graph ...")
+    #     multi_adversarial_outputs = pload(model, 'multi_adversarial')
+    #     _ = plot_multi_adversarial(test_data, multi_adversarial_outputs, dirname=model.dirname)
+    # except FileNotFoundError :
+    #     logging.warning("Multi Adversarial Output doesn't exists ...")
 
     try :
         logging.info("Generating Remove and Run Graph ...")
         remove_outputs = pload(model, 'remove_and_run')
-        plot_y_diff(test_data, remove_outputs, save_name="pyxc-pyc", dirname=model.dirname)
+        # plot_y_diff(test_data, remove_outputs, save_name="pyxc-pyc", dirname=model.dirname)
+    except FileNotFoundError:
+        logging.warning("Remove Outputs doesn't exist")
+
+    try :
+        logging.info("Generating Corr Grad and LOO Graph ...")
+        remove_outputs = pload(model, 'remove_and_run')
+        plot_correlation_between_grad_and_loo(test_data, grads, remove_outputs)
     except FileNotFoundError:
         logging.warning("Remove Outputs doesn't exist")
 

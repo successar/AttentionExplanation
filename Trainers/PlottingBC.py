@@ -1,6 +1,8 @@
 from scipy.stats import kendalltau
+from Transparency.common_code.kendall_top_k import kendall_top_k
 from Transparency.common_code.common import *
 from Transparency.common_code.plotting import *
+from functools import partial
 
 import logging
 logging.basicConfig(format='%(levelname)s - %(asctime)s - %(message)s', level=logging.INFO)
@@ -14,32 +16,33 @@ def process_grads(grads) :
             xxe[i] = np.abs(xxe[i]).sum(0)
             xxe[i] = xxe[i] / xxe[i].sum()
 
-def plot_grads(test_data, gradients, dirname='') :
+def plot_grads(test_data, gradients, correlation_measure, correlation_measure_name, dirname='') :
     X, yhat, attn = test_data.X, test_data.yt_hat, test_data.attn_hat
     fig, ax = init_gridspec(3, 3, len(gradients))
     pval_tables = {}
 
     for col, k in enumerate(gradients.keys()) :
+        if k == 'H' : continue
         gradlist = gradients[k]    
-        spcorrs = []
+        spcorrs_all = []
         
         for i in range(len(X)) :
             L = len(X[i])
-            spcorr = kendalltau(list(attn[i][1:L-1]), list(gradlist[i][1:L-1]))
-            spcorrs.append(spcorr)
+            spcorr = correlation_measure(list(attn[i][1:L-1]), list(gradlist[i][1:L-1]))
+            spcorrs_all.append(spcorr)
 
         axes = ax[col]
-        pval_tables[k] = plot_SP_histogram_by_class(axes, spcorrs, yhat)
+        pval_tables[k] = plot_SP_histogram_by_class(axes, spcorrs_all, yhat)
         annotate(axes)
 
     adjust_gridspec()
-    save_axis_in_file(fig, ax[1], dirname, 'GradientXHist')
-    save_table_in_file(pval_tables['XxE[X]'], dirname, 'GradientPval')
+    save_axis_in_file(fig, ax[1], dirname, 'GradientXHist_'+correlation_measure_name)
+    save_table_in_file(pval_tables['XxE[X]'], dirname, 'GradientPval_'+correlation_measure_name)
     show_gridspec()
 
-def plot_correlation_between_grad_and_loo(test_data, gradients, ynew_list) :
+def plot_correlation_between_grad_and_loo(test_data, gradients, ynew_list, correlation_measure, correlation_measure_name, dirname='') :
     X, yhat, attn = test_data.X, test_data.yt_hat, test_data.attn_hat
-    fig, ax = init_gridspec(3, 3, 1)
+    fig, ax = init_gridspec(3, 3, 2)
     pval_tables = {}
 
     gradlist = gradients['XxE[X]']
@@ -50,25 +53,35 @@ def plot_correlation_between_grad_and_loo(test_data, gradients, ynew_list) :
     for i in range(len(X)) :
         L = len(X[i])
         ydiff = np.abs(ynew_list[i] - yhat[i]).mean(-1)
-        spcorr_gl = kendalltau(list(ydiff[1:L-1]), list(gradlist[i][1:L-1]))
+        spcorr_gl = correlation_measure(list(ydiff[1:L-1]), list(gradlist[i][1:L-1]))
         spcorrs_gl.append(spcorr_gl)
 
-        spcorr_ag = kendalltau(list(ydiff[1:L-1]), list(attn[i][1:L-1]))
+        spcorr_ag = correlation_measure(list(ydiff[1:L-1]), list(attn[i][1:L-1]))
         spcorrs_ag.append(spcorr_ag)
 
-        spcorr_al = kendalltau(list(attn[i][1:L-1]), list(gradlist[i][1:L-1]))
+        spcorr_al = correlation_measure(list(attn[i][1:L-1]), list(gradlist[i][1:L-1]))
         spcorrs_al.append(spcorr_al)
 
 
     axes = ax[0]
     pval_tables['XxE[X]'] = plot_SP_density_by_class(axes, spcorrs_ag, yhat)
-    pval_tables['XxE[X]'] = plot_SP_density_by_class(axes, spcorrs_al, yhat, linestyle='--')
-    pval_tables['XxE[X]'] = plot_SP_density_by_class(axes, spcorrs_gl, yhat, linestyle=':')
+    plot_SP_density_by_class(axes, spcorrs_al, yhat, linestyle='--')
+    plot_SP_density_by_class(axes, spcorrs_gl, yhat, linestyle=':')
+    annotate(axes)
+
+    axes = ax[1]
+    pval_tables['gl-ag'] = plot_SP_density_by_class(axes, np.array(spcorrs_gl) - np.array(spcorrs_ag), yhat, linestyle='-')
+    print(pval_tables['gl-ag'])
+    pval_tables['gl-al'] = plot_SP_density_by_class(axes, np.array(spcorrs_gl) - np.array(spcorrs_al), yhat, linestyle='--')
+    print(pval_tables['gl-al'])
     annotate(axes)
 
     adjust_gridspec()
-    # save_axis_in_file(fig, ax[1], dirname, 'GradientXHist')
-    # save_table_in_file(pval_tables['XxE[X]'], dirname, 'GradientPval')
+    save_axis_in_file(fig, ax[0], dirname, 'GradientLOOHist_'+correlation_measure_name)
+    save_table_in_file(pval_tables['XxE[X]'], dirname, 'GradientLOOPval_'+correlation_measure_name)
+    save_axis_in_file(fig, ax[1], dirname, 'CorrGL_'+correlation_measure_name)
+    save_table_in_file(pval_tables['gl-ag'], dirname, 'CorrGL-AG_'+correlation_measure_name)
+    save_table_in_file(pval_tables['gl-al'], dirname, 'CorrGL-AL_'+correlation_measure_name)
     show_gridspec()
 
 ###########################################################################################################################
@@ -174,14 +187,14 @@ def print_adversarial_example(sentence, attn, attn_new, latex=False) :
 
 ############################################################################################################
 
-def plot_y_diff(test_data, ynew_list, save_name=None, dirname='') :
+def plot_y_diff(test_data, ynew_list, correlation_measure, correlation_measure_name, save_name=None, dirname='') :
     X, yhat, attn = test_data.X, test_data.yt_hat, test_data.attn_hat
     spcorrs = []
 
     for i in range(len(attn)) :
         L = len(X[i])
         ydiff = np.abs(ynew_list[i] - yhat[i]).mean(-1)
-        spcorrs.append(kendalltau(attn[i][1:L-1], ydiff[1:L-1]))
+        spcorrs.append(correlation_measure(attn[i][1:L-1], ydiff[1:L-1]))
 
     fig, ax = init_gridspec(3, 3, 1)
     pval_table = plot_SP_histogram_by_class(ax[0], spcorrs, yhat)
@@ -189,8 +202,8 @@ def plot_y_diff(test_data, ynew_list, save_name=None, dirname='') :
 
     adjust_gridspec()
     if save_name is not None : 
-        save_axis_in_file(fig, ax[0], dirname, save_name + '_SP')
-        save_table_in_file(pval_table, dirname, save_name + '_pval')
+        save_axis_in_file(fig, ax[0], dirname, save_name + '_SP_'+correlation_measure_name)
+        save_table_in_file(pval_table, dirname, save_name + '_pval_'+correlation_measure_name)
 
     show_gridspec()
 
@@ -226,40 +239,46 @@ def plot_attn_diff(dataset, test_data, diffs, save_name=None, dirname='') :
 
 def generate_graphs(dataset, exp_name, model, test_data) :
     logging.info("Generating graph for %s", model.dirname)
+    average_length = int(np.clip(test_data.get_stats('X')['mean_length'] * 0.1, 10, None))
+    logging.info("Average Length of test set %d", average_length)
+    kendall_top_k_dataset = partial(kendall_top_k, k=average_length)
 
     try :
         logging.info("Generating Gradients Graph ...")
         grads = pload(model, 'gradients')
         process_grads(grads)
-        # plot_grads(test_data, grads, dirname=model.dirname)
+        plot_grads(test_data, grads, kendalltau, 'kendalltau', dirname=model.dirname)
+        plot_grads(test_data, grads, kendall_top_k_dataset, 'kendalltop', dirname=model.dirname)
     except FileNotFoundError :
         logging.warning("Gradient don't exist ...")
 
-    # try :
-    #     logging.info("Generating Permutations Graph ...")
-    #     perms = pload(model, 'permutations')
-    #     plot_permutations(test_data, perms, dirname=model.dirname)
-    # except FileNotFoundError:
-    #     logging.warning("Permutation Outputs doesn't exist")
+    try :
+        logging.info("Generating Permutations Graph ...")
+        perms = pload(model, 'permutations')
+        plot_permutations(test_data, perms, dirname=model.dirname)
+    except FileNotFoundError:
+        logging.warning("Permutation Outputs doesn't exist")
 
-    # try :
-    #     logging.info("Generating Multi Adversarial Graph ...")
-    #     multi_adversarial_outputs = pload(model, 'multi_adversarial')
-    #     _ = plot_multi_adversarial(test_data, multi_adversarial_outputs, dirname=model.dirname)
-    # except FileNotFoundError :
-    #     logging.warning("Multi Adversarial Output doesn't exists ...")
+    try :
+        logging.info("Generating Multi Adversarial Graph ...")
+        multi_adversarial_outputs = pload(model, 'multi_adversarial')
+        _ = plot_multi_adversarial(test_data, multi_adversarial_outputs, dirname=model.dirname)
+    except FileNotFoundError :
+        logging.warning("Multi Adversarial Output doesn't exists ...")
 
     try :
         logging.info("Generating Remove and Run Graph ...")
         remove_outputs = pload(model, 'remove_and_run')
-        # plot_y_diff(test_data, remove_outputs, save_name="pyxc-pyc", dirname=model.dirname)
+        plot_y_diff(test_data, remove_outputs, kendalltau, 'kendalltau', save_name="pyxc-pyc", dirname=model.dirname)
+        plot_y_diff(test_data, remove_outputs, kendall_top_k_dataset, 'kendalltop', save_name="pyxc-pyc", dirname=model.dirname)
     except FileNotFoundError:
         logging.warning("Remove Outputs doesn't exist")
 
     try :
         logging.info("Generating Corr Grad and LOO Graph ...")
         remove_outputs = pload(model, 'remove_and_run')
-        plot_correlation_between_grad_and_loo(test_data, grads, remove_outputs)
+        plot_correlation_between_grad_and_loo(test_data, grads, remove_outputs, kendalltau, 'kendalltau', dirname=model.dirname)
+        plot_correlation_between_grad_and_loo(test_data, grads, remove_outputs, kendall_top_k_dataset, 'kendalltop', dirname=model.dirname)
     except FileNotFoundError:
         logging.warning("Remove Outputs doesn't exist")
 

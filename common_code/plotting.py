@@ -130,7 +130,7 @@ def plot_SP_density_by_class(ax, spcorr, yhat, linestyle='-') :
         measures['pval_sig']["Overall"] = "{:.2f}".format((sppval <= 0.05).sum() / len(sppval))
         measures['mean']["Overall"] = np.mean(sprho)
         measures['std']["Overall"] = np.std(sprho)
-        sns.kdeplot(sprho, linewidth=2, linestyle=linestyle, ax=ax)
+        sns.kdeplot(sprho, linewidth=2, linestyle=linestyle, color='k', ax=ax)
 
     return pd.DataFrame(measures)
 

@@ -8,3 +8,6 @@ TACL-Attention
 # graph_outputs
 Workshop-NAACL-Attention
 graph_outputs/adv_*
+graph_outputs/*kendalltop*
+graph_outputs/**/*.pdf
+NAACLAttention*

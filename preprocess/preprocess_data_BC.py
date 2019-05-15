@@ -2,7 +2,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Run Preprocessing on dataset')
 parser.add_argument('--data_file', type=str, required=True)
 parser.add_argument("--output_file", type=str, required=True)
-parser.add_argument('--word_vectors_type', type=str, choices=['glove.840B.300d', 'fasttext.simple.300d', 'mimic'], required=True)
+parser.add_argument('--word_vectors_type', type=str, choices=['glove.840B.300d', 'fasttext.simple.300d', 'mimic', 'pubmed'], required=True)
 parser.add_argument('--min_df', type=int, required=True)
 
 args, extras = parser.parse_known_args()
@@ -13,7 +13,7 @@ vec = vectorizer.Vectorizer(min_df=args.min_df)
 
 import pandas as pd 
 
-df = pd.read_csv(args.data_file)
+df = pd.read_csv(args.data_file) if args.data_file.endswith('.csv') else pd.read_msgpack(args.data_file)
 assert 'text' in df.columns, "No Text Field"
 assert 'label' in df.columns, "No Label Field"
 assert 'exp_split' in df.columns, "No Experimental splits defined"
@@ -35,7 +35,11 @@ if args.word_vectors_type in ['fasttext.simple.300d', 'glove.840B.300d'] :
     vec.extract_embeddings_from_torchtext(args.word_vectors_type)
 elif args.word_vectors_type == 'mimic' :
     from gensim.models import KeyedVectors
-    model = KeyedVectors.load("mimic_embedding_model.wv")
+    model = KeyedVectors.load("../../MIMIC/mimic_embedding_model.wv")
+    vec.extract_embeddings(model)
+elif args.word_vectors_type == 'pubmed' :
+    from gensim.models import KeyedVectors
+    model = KeyedVectors.load_word2vec_format('../../../../bigdata/wikipedia-pubmed-and-PMC-w2v.bin', binary=True)
     vec.extract_embeddings(model)
 else :
     vec.embeddings = None

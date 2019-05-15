@@ -8,8 +8,9 @@ import seaborn as sns
 from matplotlib import tight_layout
 
 mpl.style.use('seaborn-poster')
-sns.set_palette(sns.color_palette(['#7570b3', '#d95f02', '#1b9e77']))
-# sns.palplot(sns.color_palette(['#7570b3', '#d95f02', '#1b9e77']))
+sns.set_palette(sns.color_palette(['#43406b', '#d15a00', '#27f77d']))
+# sns.palplot(sns.color_palette(['#43406b', '#d15a00', '#27f77d']))
+# sns.set_palette('cubehelix')
 
 font = {'size'   : 17}
 mpl.rc('font', **font)
@@ -84,6 +85,10 @@ def plot_SP_histogram_by_class(ax, spcorr, yhat, bins=30) :
 
     measures = {"pval_sig" : {}, "mean" : {}, "std" : {}}
 
+    measures['pval_sig']["Overall"] = "{:.2f}".format((sppval <= 0.05).sum() / len(sppval))
+    measures['mean']["Overall"] = np.mean(sprho)
+    measures['std']["Overall"] = np.std(sprho)
+
     unique_y = None
     if len(yhat.shape) == 1 or yhat.shape[1] == 1:
         yhat = yhat.flatten()
@@ -99,9 +104,6 @@ def plot_SP_histogram_by_class(ax, spcorr, yhat, bins=30) :
             measures['std'][str(int(y))] = np.std(rho)
             ax.hist(rho, bins=bins, range=(-1.0, 1.0), alpha=0.6, linewidth=0.5, edgecolor='k', weights=np.ones(len(rho))/len(rho))
     else :
-        measures['pval_sig']["Overall"] = "{:.2f}".format((sppval <= 0.05).sum() / len(sppval))
-        measures['mean']["Overall"] = np.mean(sprho)
-        measures['std']["Overall"] = np.std(sprho)
         ax.hist(sprho, bins=bins, range=(-1.0, 1.0), alpha=0.6, linewidth=0.5, edgecolor='k', weights=np.ones(len(sprho))/len(sprho))
 
     return pd.DataFrame(measures)

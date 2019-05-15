@@ -67,12 +67,16 @@ def plot_correlation_between_grad_and_loo(test_data, gradients, ydiffs, correlat
         spcorr_al = correlation_measure(list(attn[i][1:L-1]), list(gradlist[i][1:L-1]))
         spcorrs_al.append(spcorr_al)
 
+    corr_tables = {}
 
     axes = ax[0]
-    pval_tables['XxE[X]'] = plot_SP_density_by_class(axes, spcorrs_ag, yhat)
-    plot_SP_density_by_class(axes, spcorrs_al, yhat, linestyle='--')
-    plot_SP_density_by_class(axes, spcorrs_gl, yhat, linestyle=':')
+    corr_tables['ag'] = plot_SP_density_by_class(axes, spcorrs_ag, yhat, linestyle='-').loc['Overall']
+    corr_tables['al'] = plot_SP_density_by_class(axes, spcorrs_al, yhat, linestyle='--').loc['Overall']
+    corr_tables['gl'] = plot_SP_density_by_class(axes, spcorrs_gl, yhat, linestyle=':').loc['Overall']
     annotate(axes)
+
+    corr_tables = pd.DataFrame(corr_tables).transpose()
+    save_table_in_file(corr_tables, dirname, 'CorrStats_'+correlation_measure_name)
 
     axes = ax[1]
     pval_tables['gl-ag'] = plot_SP_density_by_class(axes, np.array(spcorrs_gl) - np.array(spcorrs_ag), yhat, linestyle='-')
@@ -83,7 +87,6 @@ def plot_correlation_between_grad_and_loo(test_data, gradients, ydiffs, correlat
 
     adjust_gridspec()
     save_axis_in_file(fig, ax[0], dirname, 'GradientLOOHist_'+correlation_measure_name)
-    save_table_in_file(pval_tables['XxE[X]'], dirname, 'GradientLOOPval_'+correlation_measure_name)
     save_axis_in_file(fig, ax[1], dirname, 'CorrGL_'+correlation_measure_name)
     save_table_in_file(pval_tables['gl-ag'], dirname, 'CorrGL-AG_'+correlation_measure_name)
     save_table_in_file(pval_tables['gl-al'], dirname, 'CorrGL-AL_'+correlation_measure_name)
@@ -215,7 +218,7 @@ def generate_graphs(dataset, exp_name, model, test_data) :
         grads = pload(model, 'gradients')
         process_grads(grads)
         plot_grads(test_data, grads, kendalltau, 'kendalltau', dirname=model.dirname)
-        plot_grads(test_data, grads, kendall_top_k_dataset, 'kendalltop', dirname=model.dirname)
+        # plot_grads(test_data, grads, kendall_top_k_dataset, 'kendalltop', dirname=model.dirname)
     except FileNotFoundError :
         logging.warning("Gradient don't exist ...")
 
@@ -237,7 +240,7 @@ def generate_graphs(dataset, exp_name, model, test_data) :
         logging.info("Generating Remove and Run Graph ...")
         remove_outputs = pload(model, 'remove_and_run')
         plot_y_diff(test_data, remove_outputs, kendalltau, 'kendalltau', save_name="pyxc-pyc", dirname=model.dirname)
-        plot_y_diff(test_data, remove_outputs, kendall_top_k_dataset, 'kendalltop', save_name="pyxc-pyc", dirname=model.dirname)
+        # plot_y_diff(test_data, remove_outputs, kendall_top_k_dataset, 'kendalltop', save_name="pyxc-pyc", dirname=model.dirname)
     except FileNotFoundError:
         logging.warning("Remove Outputs doesn't exist")
 
@@ -245,7 +248,7 @@ def generate_graphs(dataset, exp_name, model, test_data) :
         logging.info("Generating Corr Grad and LOO Graph ...")
         remove_outputs = pload(model, 'remove_and_run')
         plot_correlation_between_grad_and_loo(test_data, grads, remove_outputs, kendalltau, 'kendalltau', dirname=model.dirname)
-        plot_correlation_between_grad_and_loo(test_data, grads, remove_outputs, kendall_top_k_dataset, 'kendalltop', dirname=model.dirname)
+        # plot_correlation_between_grad_and_loo(test_data, grads, remove_outputs, kendall_top_k_dataset, 'kendalltop', dirname=model.dirname)
     except FileNotFoundError:
         logging.warning("Remove Outputs doesn't exist")
 

@@ -2,7 +2,7 @@ pandas==0.24.2
 nltk==3.4.5
 tqdm==4.31.1
 typing==3.6.4
-numpy==1.16.2
+numpy==1.22.0
 allennlp==0.8.3
 scipy==1.2.1
 seaborn==0.9.0
